@@ -66,7 +66,7 @@ The following steps outline the planned workflow for this project:
 ## Dependencies & Setup
 Ensure the following Python packages are installed:
 ```bash
-pip install nibabel nilearn numpy pandas matplotlib scikit-learn qiskit
+pip install -r requirements.txt
 ```
 
 To run the main processing script:
