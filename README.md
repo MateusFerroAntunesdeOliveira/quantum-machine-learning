@@ -6,6 +6,10 @@ This project explores the intersection of neuroimaging and machine learning. The
 ## Instructions
 Download ADHD using "*Option 2: Download using a bash script*" and following - [How to Download ADHD200](https://fcon_1000.projects.nitrc.org/indi/adhd200/download_scripts/Download_Instructions_ADHD200.pdf)
 
+The references for this project are:
+
+- [Quantum Intelligence Alliance](https://github.com/Advanced-Research-Centre)
+
 ## Data Structure
 The dataset consists of neuroimaging data collected from participants, including both anatomical and functional MRI scans. The data is organized as follows:
 
