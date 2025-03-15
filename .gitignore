@@ -1,0 +1,10 @@
+# Virtual Environments
+virtual-env/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# General files
+
+# Ignore the data folder - ADHD data
+download_folder/
