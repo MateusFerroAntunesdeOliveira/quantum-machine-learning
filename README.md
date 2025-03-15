@@ -3,6 +3,9 @@
 ## Project Overview
 This project explores the intersection of neuroimaging and machine learning. The primary goal is to preprocess and analyze anatomical and functional brain imaging data using classical machine learning (ML) techniques and quantum machine learning (QML). The project is part of a research initiative linked to a Master's program in Artificial Intelligence and Machine Learning applied to Neuroscience.
 
+## Instructions
+Download ADHD using "*Option 2: Download using a bash script*" and following - [How to Download ADHD200](https://fcon_1000.projects.nitrc.org/indi/adhd200/download_scripts/Download_Instructions_ADHD200.pdf)
+
 ## Data Structure
 The dataset consists of neuroimaging data collected from participants, including both anatomical and functional MRI scans. The data is organized as follows:
 
