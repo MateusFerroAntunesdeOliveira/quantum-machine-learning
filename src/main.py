@@ -4,12 +4,12 @@ import pandas as pd
 import nibabel as nib
 import matplotlib.pyplot as plt
 
-import get_data as gd
+import get_data_adhd as adhd
 
 base_data_path = "../data/download_folder/NeuroIMAGE"
 
 def main():
-    free_control_csv, free_ad_hd_csv = gd.get_data()
+    free_control_csv, free_ad_hd_csv = adhd.get_data()
     free_participants = pd.read_csv(free_control_csv)
 
     for idx, row in free_participants.iterrows():
