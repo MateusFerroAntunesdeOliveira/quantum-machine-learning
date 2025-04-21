@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -269,7 +270,24 @@ def evaluate_model(pipeline, X_test, y_test):
     print('Confusion Matrix:\n', confusion_matrix(y_test, y_pred))
     print('Classification Report:\n', classification_report(y_test, y_pred))
 
+def compare_pipelines(pipelines, X_train, X_test, y_train, y_test):
+    """
+    Fit and evaluate a dict of pipelines, returning a summary DataFrame.
 
+    :param pipelines: dict{name: sklearn Pipeline}
+    :param X_train, X_test, y_train, y_test: train/test splits
+    :return: pandas.DataFrame with columns ['Model','Accuracy','ROC_AUC']
+    """
+    results = []
+    for name, pipeline in pipelines.items():
+        print(f'--- Model: {name} ---')
+        pipeline.fit(X_train, y_train)
+        y_pred = pipeline.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
+        auc = (roc_auc_score(y_test, pipeline.predict_proba(X_test)[:,1])
+               if hasattr(pipeline, 'predict_proba') else np.nan)
+        results.append({'Model': name, 'Accuracy': acc, 'ROC_AUC': auc})
+    return pd.DataFrame(results)
 
 def main():
     path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1.csv'
@@ -308,6 +326,13 @@ def main():
 
     rf_pipeline.fit(X_train, y_train)
     evaluate_model(rf_pipeline, X_test, y_test)
+    
+    pipelines = {
+        'RF': rf_pipeline,
+        'LR': build_pipeline(LogisticRegression(max_iter=1000))
+    }
+    summary = compare_pipelines(pipelines, X_train, X_test, y_train, y_test)
+    print(summary)
 
 if __name__ == '__main__':
     main()
