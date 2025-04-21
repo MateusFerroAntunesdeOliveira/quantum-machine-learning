@@ -4,6 +4,7 @@ import pandas as pd
 
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 def load_data(path):
@@ -205,6 +206,32 @@ def list_top_correlations(corr_matrix, target_col, n=10):
     corr_with_target = corr_matrix[target_col].abs().drop(target_col)
     return corr_with_target.sort_values(ascending=False).head(n)
 
+def split_data(df, features, target_col='DX_GROUP', test_size=0.2, random_state=42):
+    """
+    Split DataFrame into train/test arrays for features and target.
+
+    :param df: pandas.DataFrame
+    :param features: list of column names to use as predictors
+    :param target_col: name of the target column ('DX_GROUP')
+    :param test_size: proportion of data to reserve for test
+    :param random_state: seed for reproducibility
+    :return: X_train, X_test, y_train, y_test
+    """
+    X = df[features]
+    y = df[target_col]
+    return train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)
+
+def check_class_balance(y):
+    """
+    Print the distribution of classes in the target vector.
+
+    :param y: pandas.Series (target)
+    """
+    counts = y.value_counts()
+    pct = 100 * counts / counts.sum()
+    print('Class distribution:')
+    print(pd.concat([counts, pct], axis=1, keys=['Count','Percent']))
+
 def main():
     path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1.csv'
     df = load_data(path)
@@ -231,6 +258,11 @@ def main():
     print(f'Selected features by correlation threshold: {selected_features}')
     pca, df_pca = run_pca(df_imputed[selected_features], n_components=0.95)
     print(f'Number of PCA components to explain 95% variance: {df_pca.shape[1]}')
+
+    selected_feats = ['func_mean_fd', 'func_num_fd', 'func_perc_fd', 'func_quality', 'func_outlier']
+
+    X_train, X_test, y_train, y_test = split_data(df_imputed, selected_feats)
+    check_class_balance(y_train)
 
 if __name__ == '__main__':
     main()
