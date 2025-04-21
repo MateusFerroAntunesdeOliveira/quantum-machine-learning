@@ -3,8 +3,10 @@ import numpy as np
 import pandas as pd
 
 from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 def load_data(path):
@@ -232,6 +234,22 @@ def check_class_balance(y):
     print('Class distribution:')
     print(pd.concat([counts, pct], axis=1, keys=['Count','Percent']))
 
+def build_pipeline(model, use_scaling=True):
+    """
+    Create a sklearn Pipeline with optional scaling and the given estimator.
+
+    :param model: an instantiated sklearn estimator (e.g., RandomForestClassifier())
+    :param use_scaling: whether to include a StandardScaler step
+    :return: a sklearn Pipeline
+    """
+    steps = []
+    if use_scaling:
+        steps.append(('scaler', StandardScaler()))
+    steps.append(('clf', model))
+    return Pipeline(steps)
+
+
+
 def main():
     path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1.csv'
     df = load_data(path)
@@ -259,10 +277,13 @@ def main():
     pca, df_pca = run_pca(df_imputed[selected_features], n_components=0.95)
     print(f'Number of PCA components to explain 95% variance: {df_pca.shape[1]}')
 
+    # Test
     selected_feats = ['func_mean_fd', 'func_num_fd', 'func_perc_fd', 'func_quality', 'func_outlier']
-
     X_train, X_test, y_train, y_test = split_data(df_imputed, selected_feats)
     check_class_balance(y_train)
+    
+    rf_pipeline = build_pipeline(RandomForestClassifier(random_state=42))
+    print(rf_pipeline)
 
 if __name__ == '__main__':
     main()
