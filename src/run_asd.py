@@ -8,18 +8,33 @@ from sklearn.preprocessing import StandardScaler
 
 def load_data(path):
     """
-    Load phenotypic data from ABIDE dataset
-    :param path: path to the CSV file
-    :return: pandas DataFrame
+    Load phenotypic data from the ABIDE dataset into a pandas DataFrame.
+
+    Motivation:
+    Researchers need a standardized way to ingest raw phenotypic CSV files before any preprocessing.
+    This function centralizes file reading and ensures consistent delimiter usage.
+
+    :param path: str
+        File system path to the CSV file containing ABIDE phenotypic data.
+    :return: pandas.DataFrame
+        The raw phenotypic DataFrame for subsequent cleaning and analysis.
     """
     df = pd.read_csv(path, sep=',')
     return df
 
 def missing_value_report(df):
     """
-    Report missing values by column in a DataFrame.
-    :param df: DataFrame to analyze
-    :return: DataFrame with total and percentage of missing values for each column
+    Generate a summary of missing values for each column in the DataFrame.
+
+    Motivation:
+    Understanding the extent and pattern of missing data guides decisions on column removal
+    or value imputation, which is critical to avoid biased or invalid model inputs.
+
+    :param df: pandas.DataFrame
+        DataFrame to analyze for missing values.
+    :return: pandas.DataFrame
+        A two-column DataFrame where 'Total Missing' is the count of NaNs
+        and '% Missing' is the percentage relative to the DataFrame length.
     """
     total = df.isnull().sum()
     percent = 100 * total / len(df)
@@ -28,21 +43,38 @@ def missing_value_report(df):
 
 def drop_high_missing(df, threshold=0.5):
     """
-    Remove columns with more than (threshold * 100%) missing values.
-    :param df: DataFrame to filter
-    :param threshold: proportion of missing values for removal (default 0.5)
-    :return: DataFrame with columns dropped and list of dropped columns
+    Remove columns exceeding a specified threshold of missing values.
+
+    Motivation:
+    Columns with excessive missingness (e.g., >50%) often provide little usable information
+    and can introduce noise. Dropping them streamlines downstream processing.
+
+    :param df: pandas.DataFrame
+        Input DataFrame potentially containing many columns with missing data.
+    :param threshold: float, default=0.5
+        Proportion of allowed missing values before dropping (0 < threshold < 1).
+    :return: tuple
+        - pandas.DataFrame: DataFrame with high-missing columns removed.
+        - list[str]: Names of the dropped columns for record-keeping.
     """
     missing_report = missing_value_report(df)
-    cols_to_drop = missing_report[missing_report['% Missing'] > 100*threshold].index.tolist()
+    cols_to_drop = missing_report[missing_report['% Missing'] > 100 * threshold].index.tolist()
     df_clean = df.drop(columns=cols_to_drop)
     return df_clean, cols_to_drop
 
 def impute_missing(df):
     """
-    Impute missing values: median for numeric and mode for categorical.
-    :param df: DataFrame to impute
-    :return: DataFrame with missing values imputed
+    Fill missing values using median for numeric columns and mode for categorical ones.
+
+    Motivation:
+    Imputation prevents data loss when rows contain NaNs. Median is robust to outliers
+    for numerical features, while the most frequent category preserves data distribution
+    in categorical features.
+
+    :param df: pandas.DataFrame
+        Cleaned DataFrame after dropping high-missing columns.
+    :return: pandas.DataFrame
+        DataFrame where missing values have been replaced.
     """
     df_num = df.select_dtypes(include=[np.number])
     df_cat = df.select_dtypes(include=['object', 'category'])
@@ -58,10 +90,19 @@ def impute_missing(df):
 
 def compute_correlation(df, method='pearson'):
     """
-    Compute correlation matrix for numeric variables.
-    :param df: DataFrame to analyze
-    :param method: correlation method ('pearson', 'spearman')
-    :return: DataFrame with correlation matrix
+    Calculate the pairwise correlation matrix for numeric variables.
+
+    Motivation:
+    Correlation analysis helps detect multicollinearity, identify redundant features,
+    and explore relationships between predictors and the outcome (DX_GROUP).
+    Pearson measures linear relationships, while Spearman can capture monotonic trends.
+
+    :param df: pandas.DataFrame
+        Imputed DataFrame including numeric predictors and the target column.
+    :param method: str, default='pearson'
+        Correlation method: 'pearson' for linear, 'spearman' for rank-based.
+    :return: pandas.DataFrame
+        Square correlation matrix of all numeric variables.
     """
     df_num = df.select_dtypes(include=[np.number])
     corr = df_num.corr(method=method)
@@ -69,11 +110,26 @@ def compute_correlation(df, method='pearson'):
 
 def select_features_by_target_corr(corr_matrix, target_col, threshold=0.1):
     """
-    Select features whose absolute correlation with the target column exceeds a threshold.
-    :param corr_matrix: correlation DataFrame
-    :param target_col: name of the target column
-    :param threshold: minimum correlation value
-    :return: list of selected features
+    Identify features with absolute correlation above a threshold relative to the target.
+
+    Motivation:
+    Selecting predictors most associated with the diagnostic label (DX_GROUP)
+    helps focus the model on variables with predictive signal and reduces dimensionality.
+
+    :param corr_matrix: pandas.DataFrame
+        Correlation matrix from compute_correlation().
+    :param target_col: str
+        Name of the target variable column (e.g., 'DX_GROUP').
+    :param threshold: float, default=0.1
+        Minimum absolute correlation value to consider a feature relevant.
+    :return: list[str]
+        List of feature names with |correlation| > threshold, excluding the target.
+
+    Note on correlating with DX_GROUP:
+    DX_GROUP encodes diagnosis (1=ASD, 2=Control). Computing its correlation
+    with predictors quantifies how strongly each feature varies across diagnostic groups.
+    A higher absolute correlation suggests that feature distinguishes ASD vs controls,
+    guiding feature selection and interpretability.
     """
     if target_col not in corr_matrix.columns:
         raise ValueError(f"{target_col} not in correlation matrix")
@@ -84,10 +140,20 @@ def select_features_by_target_corr(corr_matrix, target_col, threshold=0.1):
 
 def run_pca(df, n_components=0.95):
     """
-    Execute PCA over normalized data and return components that explain variance.
-    :param df: imputed numeric DataFrame
-    :param n_components: float (cumulative var.) or int (number of components)
-    :return: PCA object, DataFrame of principal components
+    Perform Principal Component Analysis on standardized numeric data.
+
+    Motivation:
+    PCA reduces dimensionality by transforming features into orthogonal components
+    that capture the greatest variance. Specifying n_components as a float
+    retains enough PCs to explain that fraction of total variance (e.g., 0.95).
+
+    :param df: pandas.DataFrame
+        Imputed DataFrame with only numeric predictor columns (target dropped).
+    :param n_components: float or int, default=0.95
+        If float, the fraction of variance to retain; if int, the number of components.
+    :return: tuple
+        - sklearn.decomposition.PCA: fitted PCA object (with explained_variance_)
+        - pandas.DataFrame: transformed data in principal component space.
     """
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df.select_dtypes(include=[np.number]))
@@ -99,62 +165,72 @@ def run_pca(df, n_components=0.95):
 
 def plot_correlation_matrix(corr, figsize=(12,10)):
     """
-    Plot the correlation matrix as a heatmap.
-    :param corr: DataFrame correlation matrix
+    Visualize the correlation matrix as a heatmap.
+
+    Motivation:
+    A heatmap provides an intuitive overview of feature interrelationships,
+    highlighting clusters of highly correlated variables and potential multicollinearity.
+
+    :param corr: pandas.DataFrame
+        Square correlation matrix.
+    :param figsize: tuple, default=(12,10)
+        Figure size for the plot.
     """
     plt.figure(figsize=figsize)
-    plt.imshow(corr, aspect='auto')
+    plt.imshow(corr, aspect='auto', cmap='viridis')
     plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
     plt.yticks(range(len(corr.index)), corr.index)
-    plt.colorbar()
-    plt.title('Correlation Matrix')
+    plt.colorbar(label='Correlation coefficient')
+    plt.title('Feature Correlation Matrix')
     plt.tight_layout()
     plt.show()
 
 def list_top_correlations(corr_matrix, target_col, n=10):
     """
-    List top N features most correlated with target_col (absolute correlation).
-    :param corr_matrix: correlation DataFrame
-    :param target_col: name of the target variable
-    :param n: number of top features to list
-    :return: Series of top correlations
-    """
-    corr_with_target = corr_matrix[target_col].abs().sort_values(ascending=False)
-    corr_with_target = corr_with_target.drop(target_col)
-    return corr_with_target.head(n)
+    Return the top-N features most correlated with the target.
 
-if __name__ == '__main__':
+    Motivation:
+    Quickly surface the strongest associations between predictors and diagnosis,
+    aiding in feature prioritization and biological interpretation.
+
+    :param corr_matrix: pandas.DataFrame
+        Correlation matrix containing target and predictors.
+    :param target_col: str
+        Name of the target variable column.
+    :param n: int, default=10
+        Number of top features to return.
+    :return: pandas.Series
+        Sorted absolute correlations of top-N predictors with the target.
+    """
+    corr_with_target = corr_matrix[target_col].abs().drop(target_col)
+    return corr_with_target.sort_values(ascending=False).head(n)
+
+def main():
     path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1.csv'
     df = load_data(path)
 
-    print('Missing Values Report:')
+    # * 1. Missing data analysis
     report = missing_value_report(df)
+    print('Missing Values Report:')
     print(report)
 
-    print(f'DataFrame shape before dropping: {df.shape}')
+    # * 2. Drop columns and impute
     df_clean, dropped = drop_high_missing(df, threshold=0.5)
     print(f'Dropped columns (>{50}% missing): {dropped}')
-    print(f'DataFrame shape after dropping: {df_clean.shape}')
-
     df_imputed = impute_missing(df_clean)
 
+    # * 3. Correlation analysis
     corr_matrix = compute_correlation(df_imputed, method='pearson')
-    print(f'Correlation matrix shape: {corr_matrix.shape}')
-
     plot_correlation_matrix(corr_matrix)
-
-    # List top correlated features
-    top_features = list_top_correlations(corr_matrix, target_col='DX_GROUP', n=10)
+    top_feats = list_top_correlations(corr_matrix, target_col='DX_GROUP', n=10)
     print('Top correlated features with DX_GROUP:')
-    print(top_features)
+    print(top_feats)
 
-    features = select_features_by_target_corr(corr_matrix, target_col='DX_GROUP', threshold=0.1)
-    print(f'Selected features by correlation with DX_GROUP (>0.1): {features}')
+    # * 4. Feature selection & dimensionality reduction
+    selected_features = select_features_by_target_corr(corr_matrix, target_col='DX_GROUP', threshold=0.1)
+    print(f'Selected features by correlation threshold: {selected_features}')
+    pca, df_pca = run_pca(df_imputed[selected_features], n_components=0.95)
+    print(f'Number of PCA components to explain 95% variance: {df_pca.shape[1]}')
 
-    pca, df_pca = run_pca(df_imputed.drop(columns=['DX_GROUP']), n_components=0.95)
-    print(f'Number of PCA components to explain 95% var: {df_pca.shape[1]}')
-
-    # Next steps: train/test split, model training, evaluation
-    # e.g., from sklearn.model_selection import train_test_split
-    #       from sklearn.ensemble import RandomForestClassifier
-    #       ...
+if __name__ == '__main__':
+    main()
