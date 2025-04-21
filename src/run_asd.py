@@ -1,9 +1,10 @@
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
+from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 
 def load_data(path):
     """
@@ -39,7 +40,7 @@ def drop_high_missing(df, threshold=0.5):
 
 def impute_missing(df):
     """
-    Input missing values: median for numeric and mode for categorical.
+    Impute missing values: median for numeric and mode for categorical.
     :param df: DataFrame to impute
     :return: DataFrame with missing values imputed
     """
@@ -96,26 +97,64 @@ def run_pca(df, n_components=0.95):
     df_pca = pd.DataFrame(X_pca, columns=columns)
     return pca, df_pca
 
+def plot_correlation_matrix(corr, figsize=(12,10)):
+    """
+    Plot the correlation matrix as a heatmap.
+    :param corr: DataFrame correlation matrix
+    """
+    plt.figure(figsize=figsize)
+    plt.imshow(corr, aspect='auto')
+    plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
+    plt.yticks(range(len(corr.index)), corr.index)
+    plt.colorbar()
+    plt.title('Correlation Matrix')
+    plt.tight_layout()
+    plt.show()
+
+def list_top_correlations(corr_matrix, target_col, n=10):
+    """
+    List top N features most correlated with target_col (absolute correlation).
+    :param corr_matrix: correlation DataFrame
+    :param target_col: name of the target variable
+    :param n: number of top features to list
+    :return: Series of top correlations
+    """
+    corr_with_target = corr_matrix[target_col].abs().sort_values(ascending=False)
+    corr_with_target = corr_with_target.drop(target_col)
+    return corr_with_target.head(n)
+
 if __name__ == '__main__':
-    path = "../data/asd_data/Phenotypic_V1_0b_preprocessed1.csv"
+    path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1.csv'
     df = load_data(path)
 
-    print("Missing Values Report:")
+    print('Missing Values Report:')
     report = missing_value_report(df)
     print(report)
 
-    print(f"DataFrame shape before dropping: {df.shape}")
+    print(f'DataFrame shape before dropping: {df.shape}')
     df_clean, dropped = drop_high_missing(df, threshold=0.5)
-    print(f"Dropped columns (>{50}% missing): {dropped}")
-    print(f"DataFrame shape after dropping: {df_clean.shape}")
+    print(f'Dropped columns (>{50}% missing): {dropped}')
+    print(f'DataFrame shape after dropping: {df_clean.shape}')
 
     df_imputed = impute_missing(df_clean)
 
     corr_matrix = compute_correlation(df_imputed, method='pearson')
-    print(f"Correlation matrix shape: {corr_matrix.shape}")
+    print(f'Correlation matrix shape: {corr_matrix.shape}')
+
+    plot_correlation_matrix(corr_matrix)
+
+    # List top correlated features
+    top_features = list_top_correlations(corr_matrix, target_col='DX_GROUP', n=10)
+    print('Top correlated features with DX_GROUP:')
+    print(top_features)
 
     features = select_features_by_target_corr(corr_matrix, target_col='DX_GROUP', threshold=0.1)
-    print(f"Selected features by correlation with DX_GROUP (>0.1): {features}")
+    print(f'Selected features by correlation with DX_GROUP (>0.1): {features}')
 
     pca, df_pca = run_pca(df_imputed.drop(columns=['DX_GROUP']), n_components=0.95)
-    print(f"Number of PCA components to explain 95% var: {df_pca.shape[1]}")
+    print(f'Number of PCA components to explain 95% var: {df_pca.shape[1]}')
+
+    # Next steps: train/test split, model training, evaluation
+    # e.g., from sklearn.model_selection import train_test_split
+    #       from sklearn.ensemble import RandomForestClassifier
+    #       ...
