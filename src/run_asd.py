@@ -261,6 +261,7 @@ def evaluate_model(pipeline, X_test, y_test):
     y_pred = pipeline.predict(X_test)
     y_prob = pipeline.predict_proba(X_test)[:,1] if hasattr(pipeline, 'predict_proba') else None
 
+    print('--- Evaluation Metrics ---')
     print('Accuracy:', accuracy_score(y_test, y_pred))
     print('Precision:', precision_score(y_test, y_pred, pos_label=1))
     print('Recall:', recall_score(y_test, y_pred, pos_label=1))
@@ -289,50 +290,74 @@ def compare_pipelines(pipelines, X_train, X_test, y_train, y_test):
         results.append({'Model': name, 'Accuracy': acc, 'ROC_AUC': auc})
     return pd.DataFrame(results)
 
+
 def main():
+    # * 1. Load and inspect data
     path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1.csv'
     df = load_data(path)
+    print('Data loaded:', df.shape)
 
-    # * 1. Missing data analysis
+    # * 2. Missing-value analysis
     report = missing_value_report(df)
     print('Missing Values Report:')
     print(report)
 
-    # * 2. Drop columns and impute
+    # * 3. Drop and impute
     df_clean, dropped = drop_high_missing(df, threshold=0.5)
-    print(f'Dropped columns (>{50}% missing): {dropped}')
+    print('Dropped columns (>50% missing):', dropped)
     df_imputed = impute_missing(df_clean)
 
-    # * 3. Correlation analysis
-    corr_matrix = compute_correlation(df_imputed, method='pearson')
-    plot_correlation_matrix(corr_matrix)
-    top_feats = list_top_correlations(corr_matrix, target_col='DX_GROUP', n=10)
-    print('Top correlated features with DX_GROUP:')
-    print(top_feats)
+    # * 4. Correlation analysis
+    corr = compute_correlation(df_imputed)
+    plot_correlation_matrix(corr)
+    top_feats = list_top_correlations(corr, 'DX_GROUP', n=10)
+    print('Top correlated with DX_GROUP:', top_feats.tolist())
 
-    # * 4. Feature selection & dimensionality reduction
-    selected_features = select_features_by_target_corr(corr_matrix, target_col='DX_GROUP', threshold=0.1)
-    print(f'Selected features by correlation threshold: {selected_features}')
-    pca, df_pca = run_pca(df_imputed[selected_features], n_components=0.95)
-    print(f'Number of PCA components to explain 95% variance: {df_pca.shape[1]}')
+    # * 5. Feature selection and PCA
+    selected_feats = select_features_by_target_corr(corr, 'DX_GROUP', threshold=0.1)
+    print('Features selected by correlation:', selected_feats)
+    pca, df_pca = run_pca(df_imputed[selected_feats], n_components=0.95)
+    print('PCA components (95% var):', df_pca.shape[1])
 
-    # Test
-    selected_feats = ['func_mean_fd', 'func_num_fd', 'func_perc_fd', 'func_quality', 'func_outlier']
-    X_train, X_test, y_train, y_test = split_data(df_imputed, selected_feats)
-    check_class_balance(y_train)
+    # * 6. Train/test split
+    # a) Selected features
+    X_sel_train, X_sel_test, y_sel_train, y_sel_test = split_data(df_imputed, selected_feats)
+    print('Train/test split for selected features:', X_sel_train.shape, X_sel_test.shape)
+    check_class_balance(y_sel_train)
+
+    # b) PCA components
+    df_pca_full = df_pca.copy()
+    df_pca_full['DX_GROUP'] = df_imputed['DX_GROUP'].values
+    X_pca_train, X_pca_test, y_pca_train, y_pca_test = split_data(df_pca_full, df_pca.columns.tolist())
+    print('Train/test split for PCA components:', X_pca_train.shape, X_pca_test.shape)
+    check_class_balance(y_pca_train)
     
-    rf_pipeline = build_pipeline(RandomForestClassifier(random_state=42))
-    print(rf_pipeline)
+    # * 7. Build and evaluate individual pipeline
+    rf_selected = build_pipeline(RandomForestClassifier(random_state=42))
+    rf_selected.fit(X_sel_train, y_sel_train)
+    print('--- Random Forest on Selected Features ---')
+    evaluate_model(rf_selected, X_sel_test, y_sel_test)
 
-    rf_pipeline.fit(X_train, y_train)
-    evaluate_model(rf_pipeline, X_test, y_test)
-    
+    # * 8. Build and evaluate multiple pipelines
     pipelines = {
-        'RF': rf_pipeline,
-        'LR': build_pipeline(LogisticRegression(max_iter=1000))
+        'RF_selected': rf_selected,
+        'LR_selected': build_pipeline(LogisticRegression(max_iter=1000)),
+        'RF_pca': build_pipeline(RandomForestClassifier(random_state=42)),
+        'LR_pca': build_pipeline(LogisticRegression(max_iter=1000))
     }
-    summary = compare_pipelines(pipelines, X_train, X_test, y_train, y_test)
-    print(summary)
+    print('Comparing on selected features')
+    results_sel = compare_pipelines(
+        {k: pipelines[k] for k in ['RF_selected','LR_selected']},
+        X_sel_train, X_sel_test, y_sel_train, y_sel_test
+    )
+    print(results_sel)
+
+    print('Comparing on PCA components')
+    results_pca = compare_pipelines(
+        {k: pipelines[k] for k in ['RF_pca','LR_pca']},
+        X_pca_train, X_pca_test, y_pca_train, y_pca_test
+    )
+    print(results_pca)
 
 if __name__ == '__main__':
     main()
