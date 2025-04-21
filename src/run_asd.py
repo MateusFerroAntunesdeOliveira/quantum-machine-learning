@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -248,6 +249,26 @@ def build_pipeline(model, use_scaling=True):
     steps.append(('clf', model))
     return Pipeline(steps)
 
+def evaluate_model(pipeline, X_test, y_test):
+    """
+    Compute and print common classification metrics.
+
+    :param pipeline: trained sklearn Pipeline
+    :param X_test: test features
+    :param y_test: true test labels
+    """
+    y_pred = pipeline.predict(X_test)
+    y_prob = pipeline.predict_proba(X_test)[:,1] if hasattr(pipeline, 'predict_proba') else None
+
+    print('Accuracy:', accuracy_score(y_test, y_pred))
+    print('Precision:', precision_score(y_test, y_pred, pos_label=1))
+    print('Recall:', recall_score(y_test, y_pred, pos_label=1))
+    print('F1-score:', f1_score(y_test, y_pred, pos_label=1))
+    if y_prob is not None:
+        print('ROC AUC:', roc_auc_score(y_test, y_prob))
+    print('Confusion Matrix:\n', confusion_matrix(y_test, y_pred))
+    print('Classification Report:\n', classification_report(y_test, y_pred))
+
 
 
 def main():
@@ -284,6 +305,9 @@ def main():
     
     rf_pipeline = build_pipeline(RandomForestClassifier(random_state=42))
     print(rf_pipeline)
+
+    rf_pipeline.fit(X_train, y_train)
+    evaluate_model(rf_pipeline, X_test, y_test)
 
 if __name__ == '__main__':
     main()
