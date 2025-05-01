@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
@@ -86,14 +87,13 @@ RARE_ATTRIBUTES = [
 
 def load_data(path):
     print(f"\n[1] Loading data from: {path}")
-    dataframe = pd.read_csv(path, sep=',')
-    print(f"    Data shape: {dataframe.shape}")
-    return dataframe
+    df = pd.read_csv(path, sep=',')
+    print(f"    Data shape: {df.shape}")
+    return df
 
 def missing_value_report(df):
     missing_value = df.isnull().sum().rename("Total Missing").to_frame()
     missing_value['% Missing'] = 100 * missing_value['Total Missing'] / len(df)
-    missing_value = missing_value.sort_values('% Missing', ascending=False)
     missing_value.drop("Total Missing", axis=1, inplace=True)
     print('\n[2] Missing value summary:')
     print(missing_value.head())
@@ -116,24 +116,24 @@ def drop_by_missing_threshold(report, df, thresholds):
     Conditionally drop columns based on thresholds dict:
     Returns cleaned df and list of dropped columns.
     """
-    to_drop = []
-    for col, pct in report['% Missing'].items():
-        if col in CORE_ATTRIBUTES:
+    columns_to_remove = []
+    for columns, percentage_missing in report['% Missing'].items():
+        if columns in CORE_ATTRIBUTES:
             limit = thresholds['core']
-        elif col in SUPPORTING_ATTRIBUTES:
+        elif columns in SUPPORTING_ATTRIBUTES:
             limit = thresholds['support']
-        elif col in RARE_ATTRIBUTES:
+        elif columns in RARE_ATTRIBUTES:
             limit = thresholds['rare']
         else:
             limit = thresholds['default']
-        if pct/100 > limit:
-            to_drop.append(col)
+        if percentage_missing/100 > limit:
+            columns_to_remove.append(columns)
 
-    print(f"\n[3] Conditionally dropping {len(to_drop)} columns based on thresholds: {to_drop}")
-    df_clean = df.drop(columns=to_drop)
-    print(f"\n    New shape after conditional drop: {df_clean.shape}")
-    print(f"\n[3] Remaining columns: {df_clean.columns.tolist()}")
-    return df_clean, to_drop
+    print(f"\n[3] Conditionally dropping {len(columns_to_remove)} columns based on thresholds: {columns_to_remove}")
+    cleaned_df = df.drop(columns=columns_to_remove)
+    print(f"\n    New shape after conditional drop: {cleaned_df.shape}")
+    print(f"\n[3] Remaining columns: {cleaned_df.columns.tolist()}")
+    return cleaned_df, columns_to_remove
 
 def impute_missing(df):
     """
@@ -157,8 +157,8 @@ def impute_missing(df):
     core_num    = [c for c in CORE_ATTRIBUTES       if c in num_cols]
     support_num = [c for c in SUPPORTING_ATTRIBUTES if c in num_cols]
     support_cat = [c for c in SUPPORTING_ATTRIBUTES if c in cat_cols]
-    default_num = [c for c in num_cols if c not in core_num + support_num]
-    default_cat = [c for c in cat_cols if c not in support_cat]
+    default_num = [c for c in num_cols              if c not in core_num + support_num]
+    default_cat = [c for c in cat_cols              if c not in support_cat]
 
     print(f"\n    Core Numeric columns ({len(core_num)}): {core_num}")
     print(f"\n    Support Numeric columns ({len(support_num)}): {support_num}")
@@ -173,11 +173,11 @@ def impute_missing(df):
     default_cat_imp = SimpleImputer(strategy='most_frequent')
 
     transformer = ColumnTransformer([
-        ('core_num',    core_imp,        core_num),
-        ('sup_num',     support_num_imp, support_num),
-        ('sup_cat',     support_cat_imp, support_cat),
-        ('num_def',     default_num_imp, default_num),
-        ('cat_def',     default_cat_imp, default_cat),
+        ('core_num',  core_imp,        core_num),
+        ('sup_num',   support_num_imp, support_num),
+        ('sup_cat',   support_cat_imp, support_cat),
+        ('num_def',   default_num_imp, default_num),
+        ('cat_def',   default_cat_imp, default_cat),
     ], remainder='drop')
 
     imputed_values = transformer.fit_transform(df)
@@ -185,12 +185,34 @@ def impute_missing(df):
     print(f"\n    Imputed shape: {imputed_values.shape}")
 
     df_imputed = pd.DataFrame(imputed_values, columns=out_cols, index=df.index)
-    print(f"\n    Imputed DataFrame columns ({len(df_imputed.columns)}): {df_imputed.columns.tolist()}")
+    print(f"\n    Imputed df columns ({len(df_imputed.columns)}): {df_imputed.columns.tolist()}")
+
+    numeric_cols = core_num + support_num + default_num
+    df_imputed[numeric_cols] = df_imputed[numeric_cols].astype(float)
+    df_imputed = df_imputed.reindex(columns=df.columns)
 
     missing_after = df_imputed.isnull().sum().sum()
     print(f"\nTotal missing after imputation: {missing_after}")
 
     return df_imputed
+
+def compute_pearson_correlation(df):
+    """
+    Compute Pearson correlation for numeric variables, including target.
+    """
+    print('\n[5] Computing Pearson correlation...')
+    num = df.select_dtypes(include=[np.number])
+    pearson = num.corr(method='pearson')
+    return pearson
+
+def compute_spearman_correlation(df):
+    """
+    Compute Spearman correlation for numeric variables, including target.
+    """
+    print('\n[5] Computing Spearman correlation...')
+    num = df.select_dtypes(include=[np.number])
+    spearman = num.corr(method='spearman')
+    return spearman
 
 def main():
     path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
@@ -198,7 +220,7 @@ def main():
 
     missing_values = missing_value_report(df)
     plot_missing_distribution(missing_values)
-    
+
     thresholds = {'core': 0.8, 'support': 0.5, 'rare': 0.3, 'default': 0.5}
     df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
     remaining_missing_values = missing_value_report(df_clean)
@@ -207,6 +229,18 @@ def main():
 
     df_imputed = impute_missing(df_clean)
     df_imputed.to_csv('../output/imputed_data.csv', index=False)
+
+    pearson = compute_pearson_correlation(df_imputed)
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(pearson, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
+    plt.title('Pearson Correlation Matrix')
+    plt.show()
+
+    spearman = compute_spearman_correlation(df_imputed)
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(spearman, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
+    plt.title('Spearman Correlation Matrix')
+    plt.show()
 
 if __name__ == '__main__':
     main()
