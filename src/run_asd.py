@@ -18,7 +18,6 @@ def load_data(path):
     print(f"\n[1] Loading data from: {path}")
     df = pd.read_csv(path, sep=',')
     print(f"    Data shape: {df.shape}")
-    print(df.columns.tolist())
     return df
 
 def missing_value_report(df):
@@ -27,7 +26,7 @@ def missing_value_report(df):
     report = report.sort_values('% Missing', ascending=False)
     report.drop("Total Missing", axis=1, inplace=True)
     print('\n[2] Missing value summary:')
-    print(report.head(106))
+    print(report.head())
     return report
 
 def plot_missing_distribution(missing_values, bins=20):
@@ -146,10 +145,10 @@ def drop_by_missing_threshold(report, df, thresholds):
 
     print(f"\n[3] Conditionally dropping {len(to_drop)} columns based on thresholds: {to_drop}")
     df_clean = df.drop(columns=to_drop)
-    print(f"\nNew shape after conditional drop: {df_clean.shape}")
+    print(f"\n    New shape after conditional drop: {df_clean.shape}")
     print(f"[3] Remaining columns: {df_clean.columns.tolist()}")
     return df_clean, to_drop
-    
+
 def impute_missing(df):
     print('\n[4] Imputing missing values...')
     print(f"Num columns: {df.select_dtypes(include=[np.number])}")
@@ -264,7 +263,6 @@ def main():
     
     thresholds = {'core': 0.8, 'support': 0.5, 'rare': 0.3, 'default': 0.5}
     df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
-    # plot_missing_distribution(df_clean)
     remaining_missing_values = missing_value_report(df_clean)
     plot_missing_distribution(remaining_missing_values)
     remaining_missing_values.to_csv('remaining_missing_values.csv')
