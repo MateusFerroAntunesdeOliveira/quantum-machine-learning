@@ -11,353 +11,336 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+
 def load_data(path):
-    """
-    Load phenotypic data from the ABIDE dataset into a pandas DataFrame.
-
-    Motivation:
-    Researchers need a standardized way to ingest raw phenotypic CSV files before any preprocessing.
-    This function centralizes file reading and ensures consistent delimiter usage.
-
-    :param path: str
-        File system path to the CSV file containing ABIDE phenotypic data.
-    :return: pandas.DataFrame
-        The raw phenotypic DataFrame for subsequent cleaning and analysis.
-    """
+    print(f"\n[1] Loading data from: {path}")
     df = pd.read_csv(path, sep=',')
+    print(f"    Data shape: {df.shape}")
+    print(df.columns.tolist())
     return df
 
 def missing_value_report(df):
-    """
-    Generate a summary of missing values for each column in the DataFrame.
-
-    Motivation:
-    Understanding the extent and pattern of missing data guides decisions on column removal
-    or value imputation, which is critical to avoid biased or invalid model inputs.
-
-    :param df: pandas.DataFrame
-        DataFrame to analyze for missing values.
-    :return: pandas.DataFrame
-        A two-column DataFrame where 'Total Missing' is the count of NaNs
-        and '% Missing' is the percentage relative to the DataFrame length.
-    """
-    total = df.isnull().sum()
-    percent = 100 * total / len(df)
-    report = pd.concat([total, percent], axis=1, keys=['Total Missing', '% Missing'])
+    report = df.isnull().sum().rename("Total Missing").to_frame()
+    report['% Missing'] = 100 * report['Total Missing'] / len(df)
+    report = report.sort_values('% Missing', ascending=False)
+    report.drop("Total Missing", axis=1, inplace=True)
+    print('\n[2] Missing value summary:')
+    print(report.head(106))
     return report
 
-def drop_high_missing(df, threshold=0.5):
+def plot_missing_distribution(missing_values, bins=20):
     """
-    Remove columns exceeding a specified threshold of missing values.
-
-    Motivation:
-    Columns with excessive missingness (e.g., >50%) often provide little usable information
-    and can introduce noise. Dropping them streamlines downstream processing.
-
-    :param df: pandas.DataFrame
-        Input DataFrame potentially containing many columns with missing data.
-    :param threshold: float, default=0.5
-        Proportion of allowed missing values before dropping (0 < threshold < 1).
-    :return: tuple
-        - pandas.DataFrame: DataFrame with high-missing columns removed.
-        - list[str]: Names of the dropped columns for record-keeping.
+    Plot histogram of % missing values across all features.
     """
-    missing_report = missing_value_report(df)
-    cols_to_drop = missing_report[missing_report['% Missing'] > 100 * threshold].index.tolist()
-    df_clean = df.drop(columns=cols_to_drop)
-    return df_clean, cols_to_drop
+    plt.figure(figsize=(10, 6))
+    plt.hist(missing_values['% Missing'], bins=bins, color='blue', alpha=0.7)
+    plt.title('Distribution of Missingness Across Features')
+    plt.xlabel('% Missing Values')
+    plt.ylabel('Number of Columns')
+    plt.grid(axis='y', alpha=0.75)
+    plt.show()
 
+def drop_by_missing_threshold(report, df, thresholds):
+    """
+    Conditionally drop columns based on thresholds dict:
+    thresholds = {
+      'core': 0.7,
+      'support': 0.5,
+      'rare': 0.3,
+      'default': 0.5
+    }
+    and whitelist of core features.
+    Returns cleaned df and list of dropped columns.
+    """
+    # Define feature categories
+    core = [
+        # Label e classificação diagnóstica
+        'DX_GROUP',       # alvo
+        'DSM_IV_TR',      # diagnóstico segundo DSM-IV
+
+        # ADI-R: Entrevista Diagnóstica
+        'ADI_R_SOCIAL_TOTAL_A',    # Social (63% missing)
+        'ADI_R_VERBAL_TOTAL_BV',   # Verbal (63% missing)
+        'ADI_RRB_TOTAL_C',         # Repetitive behaviors (63% missing)
+        'ADI_R_ONSET_TOTAL_D',     # Onset (70% missing)
+        'ADI_R_RSRCH_RELIABLE',    # Confiabilidade (63% missing)
+        
+
+        # ADOS: Observação Diagnóstica
+        'ADOS_MODULE',               # Módulo aplicado (52% missing)
+        'ADOS_TOTAL',                # Total (60% missing)
+        'ADOS_COMM',                 # Comunicação (62.5% missing)
+        'ADOS_SOCIAL',               # Social (62.5% missing)
+        'ADOS_STEREO_BEHAV',         # Stereotipias (66% missing)
+        'ADOS_RSRCH_RELIABLE',       # Confiabilidade (66% missing)
+        
+        # SRS e triagem de espectro
+        'SRS_RAW_TOTAL',   # Escore total SRS (63% missing)
+    ]
+    
+    support = [
+        # Demografia & batch
+        'AGE_AT_SCAN', 
+        'SEX', 
+        'EYE_STATUS_AT_SCAN',
+        'HANDEDNESS_CATEGORY',
+        'SITE_ID',         # controle de site
+        'SUB_IN_SMP',      # flag de inclusão
+        
+        # QI
+        'FIQ',             # Full IQ (3% missing)
+        'VIQ',             # Verbal IQ (16%)
+        'PIQ',             # Performance IQ (14%)
+        'FIQ_TEST_TYPE',   # Tipo de teste (15%)
+        'VIQ_TEST_TYPE', 
+        'PIQ_TEST_TYPE',
+        
+        # Status clínico
+        'CURRENT_MED_STATUS',  # 26% missing
+        
+        # Qualidade anatômica
+        'anat_cnr','anat_efc','anat_fber','anat_fwhm','anat_qi1','anat_snr',
+        
+        # Qualidade funcional & movimento
+        'func_efc','func_fber','func_fwhm','func_dvars','func_outlier','func_quality',
+        'func_mean_fd','func_num_fd','func_perc_fd','func_gsr',
+        
+        # QC manual (sem notas textuais)
+        'qc_rater_1','qc_anat_rater_2','qc_func_rater_2','qc_anat_rater_3','qc_func_rater_3'
+    ]
+    
+    rare = [
+        # Triagem secundária
+        'SCQ_TOTAL',    # 87% missing
+        'AQ_TOTAL',     # 94% missing
+
+        # Subescalas detalhadas do SRS
+        'SRS_AWARENESS','SRS_COGNITION','SRS_COMMUNICATION','SRS_MOTIVATION','SRS_MANNERISMS', # 94%
+
+        # Vineland (funcionamento adaptativo)
+        *[c for c in df.columns if c.startswith('VINELAND')],  # 83%
+
+        # WISC-IV subtests
+        *[c for c in df.columns if c.startswith('WISC_IV')],   # 95%
+
+        # Notas de QC (textuais) e outros
+        'qc_notes_rater_1','qc_anat_notes_rater_2','qc_func_notes_rater_2',
+        'qc_anat_notes_rater_3','qc_func_notes_rater_3',
+        'MEDICATION_NAME','COMORBIDITY','OFF_STIMULANTS_AT_SCAN'
+    ]
+
+    to_drop = []
+    for col, pct in report['% Missing'].items():
+        if col in core:
+            limit = thresholds['core']
+        elif col in support:
+            limit = thresholds['support']
+        elif col in rare:
+            limit = thresholds['rare']
+        else:
+            limit = thresholds['default']
+        if pct/100 > limit:
+            to_drop.append(col)
+
+    print(f"\n[3] Conditionally dropping {len(to_drop)} columns based on thresholds: {to_drop}")
+    df_clean = df.drop(columns=to_drop)
+    print(f"\nNew shape after conditional drop: {df_clean.shape}")
+    print(f"[3] Remaining columns: {df_clean.columns.tolist()}")
+    return df_clean, to_drop
+    
 def impute_missing(df):
-    """
-    Fill missing values using median for numeric columns and mode for categorical ones.
-
-    Motivation:
-    Imputation prevents data loss when rows contain NaNs. Median is robust to outliers
-    for numerical features, while the most frequent category preserves data distribution
-    in categorical features.
-
-    :param df: pandas.DataFrame
-        Cleaned DataFrame after dropping high-missing columns.
-    :return: pandas.DataFrame
-        DataFrame where missing values have been replaced.
-    """
+    print('\n[4] Imputing missing values...')
+    print(f"Num columns: {df.select_dtypes(include=[np.number])}")
+    print(f"Cat columns: {df.select_dtypes(include=['object', 'category'])}")
     df_num = df.select_dtypes(include=[np.number])
     df_cat = df.select_dtypes(include=['object', 'category'])
-
     imp_num = SimpleImputer(strategy='median')
     imp_cat = SimpleImputer(strategy='most_frequent')
-
     df_num_imp = pd.DataFrame(imp_num.fit_transform(df_num), columns=df_num.columns)
     df_cat_imp = pd.DataFrame(imp_cat.fit_transform(df_cat), columns=df_cat.columns)
-
     df_imputed = pd.concat([df_num_imp, df_cat_imp], axis=1)
+    print(f"    Imputed data shape: {df_imputed.shape}")
     return df_imputed
 
 def compute_correlation(df, method='pearson'):
-    """
-    Calculate the pairwise correlation matrix for numeric variables.
-
-    Motivation:
-    Correlation analysis helps detect multicollinearity, identify redundant features,
-    and explore relationships between predictors and the outcome (DX_GROUP).
-    Pearson measures linear relationships, while Spearman can capture monotonic trends.
-
-    :param df: pandas.DataFrame
-        Imputed DataFrame including numeric predictors and the target column.
-    :param method: str, default='pearson'
-        Correlation method: 'pearson' for linear, 'spearman' for rank-based.
-    :return: pandas.DataFrame
-        Square correlation matrix of all numeric variables.
-    """
+    print(f"[5] Computing {method} correlation matrix...")
     df_num = df.select_dtypes(include=[np.number])
     corr = df_num.corr(method=method)
+    print(f"    Correlation matrix shape: {corr.shape}")
     return corr
 
 def select_features_by_target_corr(corr_matrix, target_col, threshold=0.1):
-    """
-    Identify features with absolute correlation above a threshold relative to the target.
-
-    Motivation:
-    Selecting predictors most associated with the diagnostic label (DX_GROUP)
-    helps focus the model on variables with predictive signal and reduces dimensionality.
-
-    :param corr_matrix: pandas.DataFrame
-        Correlation matrix from compute_correlation().
-    :param target_col: str
-        Name of the target variable column (e.g., 'DX_GROUP').
-    :param threshold: float, default=0.1
-        Minimum absolute correlation value to consider a feature relevant.
-    :return: list[str]
-        List of feature names with |correlation| > threshold, excluding the target.
-
-    Note on correlating with DX_GROUP:
-    DX_GROUP encodes diagnosis (1=ASD, 2=Control). Computing its correlation
-    with predictors quantifies how strongly each feature varies across diagnostic groups.
-    A higher absolute correlation suggests that feature distinguishes ASD vs controls,
-    guiding feature selection and interpretability.
-    """
     if target_col not in corr_matrix.columns:
         raise ValueError(f"{target_col} not in correlation matrix")
-    corr_with_target = corr_matrix[target_col].abs().sort_values(ascending=False)
-    selected = corr_with_target[corr_with_target > threshold].index.tolist()
+    vals = corr_matrix[target_col].abs().sort_values(ascending=False)
+    selected = vals[vals > threshold].index.tolist()
     selected.remove(target_col)
+    print(f"[6] Features selected (|corr|>{threshold}): {selected}")
     return selected
 
 def run_pca(df, n_components=0.95):
-    """
-    Perform Principal Component Analysis on standardized numeric data.
-
-    Motivation:
-    PCA reduces dimensionality by transforming features into orthogonal components
-    that capture the greatest variance. Specifying n_components as a float
-    retains enough PCs to explain that fraction of total variance (e.g., 0.95).
-
-    :param df: pandas.DataFrame
-        Imputed DataFrame with only numeric predictor columns (target dropped).
-    :param n_components: float or int, default=0.95
-        If float, the fraction of variance to retain; if int, the number of components.
-    :return: tuple
-        - sklearn.decomposition.PCA: fitted PCA object (with explained_variance_)
-        - pandas.DataFrame: transformed data in principal component space.
-    """
+    print(f"[7] Running PCA (n_components={n_components})...")
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df.select_dtypes(include=[np.number]))
     pca = PCA(n_components=n_components)
     X_pca = pca.fit_transform(X_scaled)
-    columns = [f'PC{i+1}' for i in range(X_pca.shape[1])]
-    df_pca = pd.DataFrame(X_pca, columns=columns)
+    cols = [f'PC{i+1}' for i in range(X_pca.shape[1])]
+    df_pca = pd.DataFrame(X_pca, columns=cols)
+    print(f"    PCA result shape: {df_pca.shape}")
     return pca, df_pca
 
-def plot_correlation_matrix(corr, figsize=(12,10)):
-    """
-    Visualize the correlation matrix as a heatmap.
-
-    Motivation:
-    A heatmap provides an intuitive overview of feature interrelationships,
-    highlighting clusters of highly correlated variables and potential multicollinearity.
-
-    :param corr: pandas.DataFrame
-        Square correlation matrix.
-    :param figsize: tuple, default=(12,10)
-        Figure size for the plot.
-    """
-    plt.figure(figsize=figsize)
-    plt.imshow(corr, aspect='auto', cmap='viridis')
-    plt.xticks(range(len(corr.columns)), corr.columns, rotation=90)
-    plt.yticks(range(len(corr.index)), corr.index)
-    plt.colorbar(label='Correlation coefficient')
-    plt.title('Feature Correlation Matrix')
-    plt.tight_layout()
-    plt.show()
-
-def list_top_correlations(corr_matrix, target_col, n=10):
-    """
-    Return the top-N features most correlated with the target.
-
-    Motivation:
-    Quickly surface the strongest associations between predictors and diagnosis,
-    aiding in feature prioritization and biological interpretation.
-
-    :param corr_matrix: pandas.DataFrame
-        Correlation matrix containing target and predictors.
-    :param target_col: str
-        Name of the target variable column.
-    :param n: int, default=10
-        Number of top features to return.
-    :return: pandas.Series
-        Sorted absolute correlations of top-N predictors with the target.
-    """
-    corr_with_target = corr_matrix[target_col].abs().drop(target_col)
-    return corr_with_target.sort_values(ascending=False).head(n)
-
 def split_data(df, features, target_col='DX_GROUP', test_size=0.2, random_state=42):
-    """
-    Split DataFrame into train/test arrays for features and target.
-
-    :param df: pandas.DataFrame
-    :param features: list of column names to use as predictors
-    :param target_col: name of the target column ('DX_GROUP')
-    :param test_size: proportion of data to reserve for test
-    :param random_state: seed for reproducibility
-    :return: X_train, X_test, y_train, y_test
-    """
+    print(f"[8] Splitting data (test_size={test_size})...")
     X = df[features]
     y = df[target_col]
-    return train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=random_state, stratify=y
+    )
+    print(f"    Train shape: {X_train.shape}, Test shape: {X_test.shape}")
+    return X_train, X_test, y_train, y_test
 
 def check_class_balance(y):
-    """
-    Print the distribution of classes in the target vector.
-
-    :param y: pandas.Series (target)
-    """
     counts = y.value_counts()
     pct = 100 * counts / counts.sum()
-    print('Class distribution:')
-    print(pd.concat([counts, pct], axis=1, keys=['Count','Percent']))
+    df_balance = pd.concat([counts, pct], axis=1, keys=['Count','Percent'])
+    print(f"[9] Class balance:\n{df_balance}")
+    return df_balance
 
 def build_pipeline(model, use_scaling=True):
-    """
-    Create a sklearn Pipeline with optional scaling and the given estimator.
-
-    :param model: an instantiated sklearn estimator (e.g., RandomForestClassifier())
-    :param use_scaling: whether to include a StandardScaler step
-    :return: a sklearn Pipeline
-    """
     steps = []
     if use_scaling:
         steps.append(('scaler', StandardScaler()))
     steps.append(('clf', model))
-    return Pipeline(steps)
+    pipeline = Pipeline(steps)
+    print(f"[10] Built pipeline: {pipeline}")
+    return pipeline
 
 def evaluate_model(pipeline, X_test, y_test):
-    """
-    Compute and print common classification metrics.
-
-    :param pipeline: trained sklearn Pipeline
-    :param X_test: test features
-    :param y_test: true test labels
-    """
+    print(f"[11] Evaluating model: {pipeline.named_steps['clf']}...")
+    # assume pipeline already fitted
     y_pred = pipeline.predict(X_test)
     y_prob = pipeline.predict_proba(X_test)[:,1] if hasattr(pipeline, 'predict_proba') else None
-
-    print('--- Evaluation Metrics ---')
-    print('Accuracy:', accuracy_score(y_test, y_pred))
-    print('Precision:', precision_score(y_test, y_pred, pos_label=1))
-    print('Recall:', recall_score(y_test, y_pred, pos_label=1))
-    print('F1-score:', f1_score(y_test, y_pred, pos_label=1))
+    print("    Metrics:")
+    print(f"      Accuracy : {accuracy_score(y_test, y_pred):.4f}")
+    print(f"      Precision: {precision_score(y_test, y_pred, pos_label=1):.4f}")
+    print(f"      Recall   : {recall_score(y_test, y_pred, pos_label=1):.4f}")
+    print(f"      F1-score : {f1_score(y_test, y_pred, pos_label=1):.4f}")
     if y_prob is not None:
-        print('ROC AUC:', roc_auc_score(y_test, y_prob))
-    print('Confusion Matrix:\n', confusion_matrix(y_test, y_pred))
-    print('Classification Report:\n', classification_report(y_test, y_pred))
+        print(f"      ROC AUC  : {roc_auc_score(y_test, y_prob):.4f}")
+    print("    Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+    print("    Classification Report:")
+    print(classification_report(y_test, y_pred))
 
 def compare_pipelines(pipelines, X_train, X_test, y_train, y_test):
-    """
-    Fit and evaluate a dict of pipelines, returning a summary DataFrame.
-
-    :param pipelines: dict{name: sklearn Pipeline}
-    :param X_train, X_test, y_train, y_test: train/test splits
-    :return: pandas.DataFrame with columns ['Model','Accuracy','ROC_AUC']
-    """
+    print(f"[12] Comparing {len(pipelines)} pipelines...")
     results = []
-    for name, pipeline in pipelines.items():
-        print(f'--- Model: {name} ---')
-        pipeline.fit(X_train, y_train)
-        y_pred = pipeline.predict(X_test)
-        acc = accuracy_score(y_test, y_pred)
-        auc = (roc_auc_score(y_test, pipeline.predict_proba(X_test)[:,1])
-               if hasattr(pipeline, 'predict_proba') else np.nan)
-        results.append({'Model': name, 'Accuracy': acc, 'ROC_AUC': auc})
-    return pd.DataFrame(results)
+    for name, pipe in pipelines.items():
+        print(f"    Fitting pipeline: {name}")
+        pipe.fit(X_train, y_train)
+        y_pred = pipe.predict(X_test)
+        auc = None
+        if hasattr(pipe, 'predict_proba'):
+            auc = roc_auc_score(y_test, pipe.predict_proba(X_test)[:,1])
+        results.append({
+            'Model': name,
+            'Accuracy': accuracy_score(y_test, y_pred),
+            'ROC_AUC': auc
+        })
+    df_results = pd.DataFrame(results)
+    print("    Comparison results:")
+    print(df_results)
+    return df_results
 
 
 def main():
-    # * 1. Load and inspect data
-    path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1.csv'
+    path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
     df = load_data(path)
-    print('Data loaded:', df.shape)
 
-    # * 2. Missing-value analysis
-    report = missing_value_report(df)
-    print('Missing Values Report:')
-    print(report)
-
-    # * 3. Drop and impute
-    df_clean, dropped = drop_high_missing(df, threshold=0.5)
-    print('Dropped columns (>50% missing):', dropped)
-    df_imputed = impute_missing(df_clean)
-
-    # * 4. Correlation analysis
-    corr = compute_correlation(df_imputed)
-    plot_correlation_matrix(corr)
-    top_feats = list_top_correlations(corr, 'DX_GROUP', n=10)
-    print('Top correlated with DX_GROUP:', top_feats.tolist())
-
-    # * 5. Feature selection and PCA
-    selected_feats = select_features_by_target_corr(corr, 'DX_GROUP', threshold=0.1)
-    print('Features selected by correlation:', selected_feats)
-    pca, df_pca = run_pca(df_imputed[selected_feats], n_components=0.95)
-    print('PCA components (95% var):', df_pca.shape[1])
-
-    # * 6. Train/test split
-    # a) Selected features
-    X_sel_train, X_sel_test, y_sel_train, y_sel_test = split_data(df_imputed, selected_feats)
-    print('Train/test split for selected features:', X_sel_train.shape, X_sel_test.shape)
-    check_class_balance(y_sel_train)
-
-    # b) PCA components
-    df_pca_full = df_pca.copy()
-    df_pca_full['DX_GROUP'] = df_imputed['DX_GROUP'].values
-    X_pca_train, X_pca_test, y_pca_train, y_pca_test = split_data(df_pca_full, df_pca.columns.tolist())
-    print('Train/test split for PCA components:', X_pca_train.shape, X_pca_test.shape)
-    check_class_balance(y_pca_train)
+    missing_values = missing_value_report(df)
+    plot_missing_distribution(missing_values)
     
-    # * 7. Build and evaluate individual pipeline
-    rf_selected = build_pipeline(RandomForestClassifier(random_state=42))
-    rf_selected.fit(X_sel_train, y_sel_train)
-    print('--- Random Forest on Selected Features ---')
-    evaluate_model(rf_selected, X_sel_test, y_sel_test)
+    thresholds = {'core': 0.8, 'support': 0.5, 'rare': 0.3, 'default': 0.5}
+    df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
+    # plot_missing_distribution(df_clean)
+    remaining_missing_values = missing_value_report(df_clean)
+    plot_missing_distribution(remaining_missing_values)
+    remaining_missing_values.to_csv('remaining_missing_values.csv')
 
-    # * 8. Build and evaluate multiple pipelines
-    pipelines = {
-        'RF_selected': rf_selected,
-        'LR_selected': build_pipeline(LogisticRegression(max_iter=1000)),
-        'RF_pca': build_pipeline(RandomForestClassifier(random_state=42)),
-        'LR_pca': build_pipeline(LogisticRegression(max_iter=1000))
-    }
-    print('Comparing on selected features')
-    results_sel = compare_pipelines(
-        {k: pipelines[k] for k in ['RF_selected','LR_selected']},
-        X_sel_train, X_sel_test, y_sel_train, y_sel_test
-    )
-    print(results_sel)
 
-    print('Comparing on PCA components')
-    results_pca = compare_pipelines(
-        {k: pipelines[k] for k in ['RF_pca','LR_pca']},
-        X_pca_train, X_pca_test, y_pca_train, y_pca_test
-    )
-    print(results_pca)
+
+
+    # # Step 4: Impute Missing Values
+    # df_imputed = impute_missing(df_clean)
+
+    # # Step 5: Correlation Analysis
+    # corr_matrix = compute_correlation(df_imputed, method='pearson')
+
+    # # Step 6: Feature Selection by Correlation
+    # target = 'DX_GROUP'
+    # selected_features = select_features_by_target_corr(corr_matrix, target_col=target, threshold=0.1)
+
+    # # Step 7: Dimensionality Reduction (PCA)
+    # pca_model, df_pca = run_pca(df_imputed[selected_features], n_components=0.95)
+
+    # # Step 8: Train/Test Split
+    # X_train, X_test, y_train, y_test = split_data(df_imputed, selected_features, target_col=target, test_size=0.2)
+    # _ = check_class_balance(y_train)
+
+    # # Step 9: Build and Train Model
+    # rf_pipeline = build_pipeline(RandomForestClassifier(random_state=42))
+    # rf_pipeline.fit(X_train, y_train)
+
+    # # Step 10: Evaluate Single Model
+    # evaluate_model(rf_pipeline, X_test, y_test)
+
+    # # Step 11: Compare Multiple Pipelines
+    # pipelines = {
+    #     'RandomForest': rf_pipeline,
+    #     'LogisticRegression': build_pipeline(LogisticRegression(max_iter=1000))
+    # }
+    # compare_pipelines(pipelines, X_train, X_test, y_train, y_test)
+
 
 if __name__ == '__main__':
     main()
+
+    # Entender melhor os dados - remover colunas que não são relevantes
+    
+    # Classification models to try:
+    # Random Forest
+    # Logistic Regression
+    # SVM
+    # KNN
+    # DT
+    # ExtraTrees
+    # XGBoost
+    # LightGBM
+    # CatBoost
+    # AdaBoost
+    # Naive Bayes
+    # MLP
+    # Stacking / Voting Ensembles
+    
+    # Em vez de CV, usar StratifiedKFold para medir variabilidade?
+    # Comparar com a literatura e utilizar o que estao usando.
+    
+    # Hyperparameter tuning:
+    # GridSearchCV, RandomizedSearchCV, Optuna, etc.
+    
+    # Pipeline unico:
+    # Imputer -> Scaler -> Feature Selection -> PCA -> Estimator
+    
+    # Verificar se tem desbalanceamento de classes e aplicar oversampling (SMOTE), etc
+
+    # Métricas:
+    # AUCROC, F1, Precision, Recall, Confusion Matrix, Classification Report, Precision-Recall Curve
+    
+    # Plot de learning curves para ver se tem overfitting ou underfitting
+    
+    # Comparar PCA com Feature Selection
+    
+    # Gerar Relatorio Automatizado com pandas e gráficos de comparação
+    
