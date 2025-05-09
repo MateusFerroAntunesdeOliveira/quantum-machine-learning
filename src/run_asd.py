@@ -91,6 +91,20 @@ def load_data(path):
     print(f"    Data shape: {df.shape}")
     return df
 
+def drop_by_unnecessary_columns(df):
+    """
+    Remove unnecessary columns from the dataset.
+    Includes:
+        - Unnamed columns
+        - SUB_ID
+        - X
+        - subject
+    """
+    print('\n[1] Dropping unnecessary columns...')
+    df = df.drop(columns=['Unnamed: 0.1', 'Unnamed: 0', 'SUB_ID', 'X', 'subject'], errors='ignore')
+    print(f"    New shape after dropping unnecessary columns: {df.shape}")
+    return df
+
 def missing_value_report(df):
     missing_value = df.isnull().sum().rename("Total Missing").to_frame()
     missing_value['% Missing'] = 100 * missing_value['Total Missing'] / len(df)
@@ -216,7 +230,8 @@ def compute_spearman_correlation(df):
 
 def main():
     path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
-    df = load_data(path)
+    raw_df = load_data(path)
+    df = drop_by_unnecessary_columns(raw_df)
 
     missing_values = missing_value_report(df)
     plot_missing_distribution(missing_values)
