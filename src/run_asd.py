@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import ppscore as pps
 
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
@@ -228,6 +229,17 @@ def compute_spearman_correlation(df):
     spearman = num.corr(method='spearman')
     return spearman
 
+def compute_pps_matrix(df, target_col='DX_GROUP'):
+    """
+    Compute the Predictive Power Score (PPS) matrix for the given DataFrame.
+    The target column is specified by the `target_col` parameter.
+    """
+    print('\n[5] Computing full PPS matrix...')
+    pps_full_matrix = pps.matrix(df)
+    sub = pps_full_matrix[(pps_full_matrix.y == target_col) & (pps_full_matrix.x != target_col)]
+    pps_pivot = sub.pivot(index='x', columns='y', values='ppscore')
+    return pps_pivot
+
 def main():
     path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
     raw_df = load_data(path)
@@ -255,6 +267,16 @@ def main():
     plt.figure(figsize=(12, 10))
     sns.heatmap(spearman, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
     plt.title('Spearman Correlation Matrix')
+    plt.show()
+
+    pps_df = compute_pps_matrix(df_imputed, target_col='DX_GROUP')
+    n_feats = pps_df.shape[0]
+    plt.figure(figsize=(12, max(4, n_feats * 0.3)))
+    sns.heatmap(pps_df, annot=True, fmt='.2f', cmap='coolwarm', cbar_kws={'shrink': 0.5}, annot_kws={'size': 9}, linewidths=0.5, square=False)
+    plt.yticks(ticks=np.arange(n_feats) + 0.5, labels=pps_df.index, rotation=0, fontsize=8)
+    plt.xticks(rotation=45, ha='right', fontsize=9)
+    plt.title('PPS predicting DX_GROUP')
+    plt.tight_layout()
     plt.show()
 
 if __name__ == '__main__':
