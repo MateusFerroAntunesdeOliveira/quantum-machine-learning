@@ -14,3 +14,6 @@ dist/
 
 # Environment file - contains sensitive information
 .env
+
+# IDE files
+.vscode/
