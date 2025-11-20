@@ -24,6 +24,7 @@ from sklearn.linear_model import BayesianRidge
 from sklearn.compose import ColumnTransformer
 
 from . import config
+from . import utils
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -39,13 +40,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def load_data(path):
-    print(f"\n[1] Loading data from: {path}")
-    df = pd.read_csv(path, sep=',')
-    print(f"    Data shape: {df.shape}")
-    return df
-
-def drop_by_unnecessary_columns(df):
+def drop_unnecessary_columns(df):
     """
     Remove unnecessary columns from the dataset.
     Includes:
@@ -54,9 +49,9 @@ def drop_by_unnecessary_columns(df):
         - X
         - subject
     """
-    print('\n[1] Dropping unnecessary columns...')
+    logger.info(f"Initial shape before dropping unnecessary columns: {df.shape}")
     df = df.drop(columns=config.COLS_TO_DROP_INITIALLY, errors='ignore')
-    print(f"    New shape after dropping unnecessary columns: {df.shape}")
+    logger.info(f"New shape after dropping unnecessary columns: {df.shape}")
     return df
 
 def missing_value_report(df):
@@ -64,7 +59,8 @@ def missing_value_report(df):
     missing_value['% Missing'] = 100 * missing_value['Total Missing'] / len(df)
     missing_value.drop("Total Missing", axis=1, inplace=True)
     print('\n[2] Missing value summary:')
-    print(missing_value.head(120))
+    print(missing_value.head(5))
+    print(missing_value.shape)
     return missing_value
 
 def plot_missing_distribution(missing_values, bins=20):
@@ -79,7 +75,7 @@ def plot_missing_distribution(missing_values, bins=20):
     plt.grid(axis='y', alpha=0.75)
     plt.show()
 
-def drop_by_missing_threshold(report, df, thresholds):
+def drop_with_threshold(report, df, thresholds):
     """
     Conditionally drop columns based on thresholds dict:
     Returns cleaned df and list of dropped columns.
@@ -97,10 +93,8 @@ def drop_by_missing_threshold(report, df, thresholds):
         if percentage_missing/100 > limit:
             columns_to_remove.append(columns)
 
-    print(f"\n[3] Conditionally dropping {len(columns_to_remove)} columns based on thresholds: {columns_to_remove}")
+    logger.debug(f"Checking column '{columns}': missing {percentage_missing}%, limit {limit*100}%")
     cleaned_df = df.drop(columns=columns_to_remove)
-    print(f"\n    New shape after conditional drop: {cleaned_df.shape}")
-    print(f"\n[3] Remaining columns: {cleaned_df.columns.tolist()}")
     return cleaned_df, columns_to_remove
 
 def impute_missing(df):
@@ -114,7 +108,7 @@ def impute_missing(df):
           - numeric: SimpleImputer(strategy='median')
           - categorical: SimpleImputer(strategy='most_frequent')
     """
-    print('\n[4] Imputing missing values with advanced strategy...')
+    logger.info(f"Imputing missing values with advanced strategy")
 
     # * Remove sentinel values (-9999) and replace with NaN
     df = df.replace({-9999: np.nan, '-9999': np.nan})
@@ -132,11 +126,11 @@ def impute_missing(df):
     default_num = [c for c in num_cols if c not in defined_cols]
     default_cat = [c for c in cat_cols if c not in defined_cols]
 
-    print(f"\n    Core Numeric columns ({len(core_num)}): {core_num}")
-    print(f"\n    Support Numeric columns ({len(support_num)}): {support_num}")
-    print(f"\n    Support Categorical columns ({len(support_cat)}): {support_cat}")
-    print(f"\n    Default Numeric columns ({len(default_num)}): {default_num}")
-    print(f"\n    Default Categorical columns ({len(default_cat)}): {default_cat}")
+    logger.info(f"Core Numeric columns ({len(core_num)}): {core_num}")
+    logger.info(f"Support Numeric columns ({len(support_num)}): {support_num}")
+    logger.info(f"Support Categorical columns ({len(support_cat)}): {support_cat}")
+    logger.info(f"Default Numeric columns ({len(default_num)}): {default_num}")
+    logger.info(f"Default Categorical columns ({len(default_cat)}): {default_cat}")
 
     # * Define imputers for each group
     core_numerical_imputer = IterativeImputer(estimator=BayesianRidge(), max_iter=10, random_state=42)
@@ -156,11 +150,10 @@ def impute_missing(df):
     # * Enable direct pandas output - new in sklearn 1.2+
     transformer.set_output(transform='pandas')
     
-    print(f"\n    Fitting and transforming data for imputation...")
+    logger.info(f"Fitting and transforming data for imputation...")
     df_imputed = transformer.fit_transform(df)
     missing_after = df_imputed.isnull().sum().sum()
-    print(f"    Final Shape: {df_imputed.shape}")
-    print(f"    Total missing after imputation: {missing_after}\n")
+    logger.info(f"Imputation complete. Total missing values after imputation: {missing_after}")
 
     return df_imputed
 
@@ -168,7 +161,7 @@ def compute_pearson_correlation(df):
     """
     Compute Pearson correlation for numeric variables, including target.
     """
-    print('\n[5] Computing Pearson correlation...')
+    logger.info(f"Computing Pearson correlation...")
     num = df.select_dtypes(include=[np.number])
     pearson = num.corr(method='pearson')
     return pearson
@@ -177,7 +170,7 @@ def compute_spearman_correlation(df):
     """
     Compute Spearman correlation for numeric variables, including target.
     """
-    print('\n[5] Computing Spearman correlation...')
+    logger.info(f"Computing Spearman correlation...")
     num = df.select_dtypes(include=[np.number])
     spearman = num.corr(method='spearman')
     return spearman
@@ -187,27 +180,28 @@ def compute_pps_matrix(df, target_col=config.TARGET_COLUMN):
     Compute the Predictive Power Score (PPS) matrix for the given DataFrame.
     The target column is specified by the `target_col` parameter.
     """
-    print('\n[5] Computing full PPS matrix...')
+    logger.info(f"Computing full PPS matrix...")
     pps_full_matrix = pps.matrix(df)
     sub = pps_full_matrix[(pps_full_matrix.y == target_col) & (pps_full_matrix.x != target_col)]
     pps_pivot = sub.pivot(index='x', columns='y', values='ppscore')
     return pps_pivot
 
 def main():
-    if not os.path.exists(config.RAW_DATA_FILE):
-        print(f"Input data file not found at: {config.RAW_DATA_FILE}")
-        return
+    raw_df = utils.load_raw_data()
+    df = drop_unnecessary_columns(raw_df)
 
-    raw_df = load_data(config.RAW_DATA_FILE)
-    df = drop_by_unnecessary_columns(raw_df)
+    initial_missing_values_report = missing_value_report(df)
+    logger.info(f"Initial missing value report shape: {initial_missing_values_report.shape}")
+    # plot_missing_distribution(initial_missing_values_report)
 
-    missing_values = missing_value_report(df)
-    # plot_missing_distribution(missing_values)
+    df_clean, dropped = drop_with_threshold(report=initial_missing_values_report, df=df, thresholds=config.MISSING_THRESHOLDS)
+    logger.info(f"Columns dropped: {len(dropped)}")
+    logger.info(f"Columns remaining after drop: {df_clean.shape[1]}")
 
-    df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=config.MISSING_THRESHOLDS)
-    remaining_missing_values = missing_value_report(df_clean)
-    # plot_missing_distribution(remaining_missing_values)
-    remaining_missing_values.to_csv(config.DROPPED_COLS_FILE)
+    remaining_missing_values_report = missing_value_report(df_clean)
+    logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}")
+    # plot_missing_distribution(remaining_missing_values_report)
+    remaining_missing_values_report.to_csv(config.DROPPED_COLS_FILE)
 
     df_imputed = impute_missing(df_clean)
 
@@ -217,6 +211,11 @@ def main():
 
     df_imputed.to_csv(config.IMPUTED_DATA_FILE, index=False)
     logger.info(f"Imputed data saved to: {config.IMPUTED_DATA_FILE}")
+
+
+
+
+
 
     # pearson = compute_pearson_correlation(df_imputed)
     # plt.figure(figsize=(12, 10))
