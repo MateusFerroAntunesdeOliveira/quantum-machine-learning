@@ -1,10 +1,16 @@
-# Virtual Environments
-qml-env/
+# Virtual Environments - created by UV tool
+.venv/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 
 # General files
+logs/*.log
 
-# Ignore the data folder - ADHD data
-download_folder/
+# Distribution / packaging
+build/
+dist/
+*.spec
+
+# Environment file - contains sensitive information
+.env
