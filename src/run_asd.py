@@ -1,3 +1,4 @@
+import logging
 import os
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="ppscore")
@@ -25,8 +26,14 @@ from sklearn.compose import ColumnTransformer
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
+INPUT_DATA_PATH = 'data/input/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
+OUTPUT_IMPUTED_DATA_PATH = 'data/output/imputed_data.csv'
+REMAINING_MISSING_VALUES_PATH = 'data/output/remaining_missing_values.csv'
+LOG_OUTPUT_PATH = 'logs/run_asd.log'
+TARGET_COLUMN = 'DX_GROUP'
+
 CORE_ATTRIBUTES = [
-    'DX_GROUP',                # Diagnostic Group (1=Autism, 2=Control)
+    TARGET_COLUMN,             # Diagnostic Group (1=Autism, 2=Control)
     'DSM_IV_TR',               # Diagnostic Group (0=none, 1=Autism, 3=Aspergers, 4=PDD-NOS)
 
     # ADI-R: Autism Diagnostic Interview-Revised
@@ -90,6 +97,17 @@ RARE_ATTRIBUTES = [
     'qc_anat_notes_rater_3','qc_func_notes_rater_3',
     'MEDICATION_NAME','COMORBIDITY','OFF_STIMULANTS_AT_SCAN'
 ]
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(LOG_OUTPUT_PATH, encoding='utf-8')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 def load_data(path):
     print(f"\n[1] Loading data from: {path}")
@@ -234,7 +252,7 @@ def compute_spearman_correlation(df):
     spearman = num.corr(method='spearman')
     return spearman
 
-def compute_pps_matrix(df, target_col='DX_GROUP'):
+def compute_pps_matrix(df, target_col=TARGET_COLUMN):
     """
     Compute the Predictive Power Score (PPS) matrix for the given DataFrame.
     The target column is specified by the `target_col` parameter.
@@ -246,13 +264,11 @@ def compute_pps_matrix(df, target_col='DX_GROUP'):
     return pps_pivot
 
 def main():
-    path = 'data/input/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
-
-    if not os.path.exists(path):
-        print(f"Input data file not found at: {path}")
+    if not os.path.exists(INPUT_DATA_PATH):
+        print(f"Input data file not found at: {INPUT_DATA_PATH}")
         return
 
-    raw_df = load_data(path)
+    raw_df = load_data(INPUT_DATA_PATH)
     df = drop_by_unnecessary_columns(raw_df)
 
     missing_values = missing_value_report(df)
@@ -262,15 +278,16 @@ def main():
     df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
     remaining_missing_values = missing_value_report(df_clean)
     # plot_missing_distribution(remaining_missing_values)
-    remaining_missing_values.to_csv('data/output/remaining_missing_values.csv')
+    remaining_missing_values.to_csv(REMAINING_MISSING_VALUES_PATH)
 
     df_imputed = impute_missing(df_clean)
 
-    # * Ensure DX_GROUP is integer after imputation    
-    if 'DX_GROUP' in df_imputed.columns:
-        df_imputed['DX_GROUP'] = df_imputed['DX_GROUP'].astype(int)  
+    # * Ensure TARGET_COLUMN (DX_GROUP) is integer after imputation    
+    if TARGET_COLUMN in df_imputed.columns:
+        df_imputed[TARGET_COLUMN] = df_imputed[TARGET_COLUMN].astype(int)  
 
-    df_imputed.to_csv('data/output/imputed_data.csv', index=False)
+    df_imputed.to_csv(OUTPUT_IMPUTED_DATA_PATH, index=False)
+    logger.info(f"Imputed data saved to: {OUTPUT_IMPUTED_DATA_PATH}")
 
     # pearson = compute_pearson_correlation(df_imputed)
     # plt.figure(figsize=(12, 10))
@@ -284,13 +301,13 @@ def main():
     # plt.title('Spearman Correlation Matrix')
     # plt.show()
 
-    # pps_df = compute_pps_matrix(df_imputed, target_col='DX_GROUP')
+    # pps_df = compute_pps_matrix(df_imputed, target_col=TARGET_COLUMN)
     # n_feats = pps_df.shape[0]
     # plt.figure(figsize=(12, max(4, n_feats * 0.3)))
     # sns.heatmap(pps_df, annot=True, fmt='.2f', cmap='coolwarm', cbar_kws={'shrink': 0.5}, annot_kws={'size': 9}, linewidths=0.5, square=False)
     # plt.yticks(ticks=np.arange(n_feats) + 0.5, labels=pps_df.index, rotation=0, fontsize=8)
     # plt.xticks(rotation=45, ha='right', fontsize=9)
-    # plt.title('PPS predicting DX_GROUP')
+    # plt.title(f'PPS predicting {TARGET_COLUMN}')
     # plt.tight_layout()
     # plt.show()
 
