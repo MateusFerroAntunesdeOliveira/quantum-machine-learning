@@ -88,24 +88,17 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/yourusername/yourrepository.git
-    cd yourrepository
+    git clone https://github.com/MateusFerroAntunesdeOliveira/quantum-machine-learning.git
+    cd quantum-machine-learning
     ```
 2.  **Sync dependencies:** This command creates the virtual environment and installs all required packages defined in `pyproject.toml`.
     ```bash
     uv sync
     ```
 
-### Data Setup
-
-*Note: Raw medical data is not committed to the repository.*
-
-1. Download the `Phenotypic_V1_0b_preprocessed1.csv` from the ABIDE/PCP website.
-2. Place it in the `data/input/` directory.
-
 ### Running the Pipeline
 
-To run the main preprocessing and engineering script:
+To run the main preprocessing and engineering script, simply execute:
 
 ```bash
 uv run src/run_asd.py
@@ -125,10 +118,8 @@ uv run src/run_asd.py
 ----
 
 
-**Author:** Mateus Ferro Antunes de Oliveira, M.Sc. Student
-
-**Institution:** Universidade Federal do Paraná (UFPR)
+**Author:** Mateus Ferro Antunes de Oliveira, **M.Sc. Student** in Electrical Engineering - Bioinformatics/AI at **Universidade Federal do Paraná** (UFPR).
 
 **Advisor:** Prof. Dr. Leandro dos Santos Coelho
 
-**Contact:** [mateus.ferro.2001@hotmail.com](mailto:mateus.ferro.2001@hotmail.com)
+All rights reserved © 2025
