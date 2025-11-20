@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="ppscore")
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -241,43 +244,43 @@ def compute_pps_matrix(df, target_col='DX_GROUP'):
     return pps_pivot
 
 def main():
-    path = '../data/asd_data/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
+    path = 'data/input/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
     raw_df = load_data(path)
     df = drop_by_unnecessary_columns(raw_df)
 
     missing_values = missing_value_report(df)
     plot_missing_distribution(missing_values)
 
-    thresholds = {'core': 0.8, 'support': 0.5, 'rare': 0.3, 'default': 0.5}
-    df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
-    remaining_missing_values = missing_value_report(df_clean)
-    plot_missing_distribution(remaining_missing_values)
-    remaining_missing_values.to_csv('../output/remaining_missing_values.csv')
+    # thresholds = {'core': 0.8, 'support': 0.5, 'rare': 0.3, 'default': 0.5}
+    # df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
+    # remaining_missing_values = missing_value_report(df_clean)
+    # plot_missing_distribution(remaining_missing_values)
+    # remaining_missing_values.to_csv('data/output/remaining_missing_values.csv')
 
-    df_imputed = impute_missing(df_clean)
-    df_imputed.to_csv('../output/imputed_data.csv', index=False)
+    # df_imputed = impute_missing(df_clean)
+    # df_imputed.to_csv('data/output/imputed_data.csv', index=False)
 
-    pearson = compute_pearson_correlation(df_imputed)
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(pearson, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
-    plt.title('Pearson Correlation Matrix')
-    plt.show()
+    # pearson = compute_pearson_correlation(df_imputed)
+    # plt.figure(figsize=(12, 10))
+    # sns.heatmap(pearson, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
+    # plt.title('Pearson Correlation Matrix')
+    # plt.show()
 
-    spearman = compute_spearman_correlation(df_imputed)
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(spearman, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
-    plt.title('Spearman Correlation Matrix')
-    plt.show()
+    # spearman = compute_spearman_correlation(df_imputed)
+    # plt.figure(figsize=(12, 10))
+    # sns.heatmap(spearman, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
+    # plt.title('Spearman Correlation Matrix')
+    # plt.show()
 
-    pps_df = compute_pps_matrix(df_imputed, target_col='DX_GROUP')
-    n_feats = pps_df.shape[0]
-    plt.figure(figsize=(12, max(4, n_feats * 0.3)))
-    sns.heatmap(pps_df, annot=True, fmt='.2f', cmap='coolwarm', cbar_kws={'shrink': 0.5}, annot_kws={'size': 9}, linewidths=0.5, square=False)
-    plt.yticks(ticks=np.arange(n_feats) + 0.5, labels=pps_df.index, rotation=0, fontsize=8)
-    plt.xticks(rotation=45, ha='right', fontsize=9)
-    plt.title('PPS predicting DX_GROUP')
-    plt.tight_layout()
-    plt.show()
+    # pps_df = compute_pps_matrix(df_imputed, target_col='DX_GROUP')
+    # n_feats = pps_df.shape[0]
+    # plt.figure(figsize=(12, max(4, n_feats * 0.3)))
+    # sns.heatmap(pps_df, annot=True, fmt='.2f', cmap='coolwarm', cbar_kws={'shrink': 0.5}, annot_kws={'size': 9}, linewidths=0.5, square=False)
+    # plt.yticks(ticks=np.arange(n_feats) + 0.5, labels=pps_df.index, rotation=0, fontsize=8)
+    # plt.xticks(rotation=45, ha='right', fontsize=9)
+    # plt.title('PPS predicting DX_GROUP')
+    # plt.tight_layout()
+    # plt.show()
 
 if __name__ == '__main__':
     main()
