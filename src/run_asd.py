@@ -54,15 +54,6 @@ def drop_unnecessary_columns(df):
     logger.info(f"New shape after dropping unnecessary columns: {df.shape}")
     return df
 
-def missing_value_report(df):
-    missing_value = df.isnull().sum().rename("Total Missing").to_frame()
-    missing_value['% Missing'] = 100 * missing_value['Total Missing'] / len(df)
-    missing_value.drop("Total Missing", axis=1, inplace=True)
-    print('\n[2] Missing value summary:')
-    print(missing_value.head(5))
-    print(missing_value.shape)
-    return missing_value
-
 def plot_missing_distribution(missing_values, bins=20):
     """
     Plot histogram of % missing values across all features.
@@ -108,7 +99,7 @@ def impute_missing(df):
           - numeric: SimpleImputer(strategy='median')
           - categorical: SimpleImputer(strategy='most_frequent')
     """
-    logger.info(f"Imputing missing values with advanced strategy")
+    logger.info(f"Imputing missing values with advanced strategy\n")
 
     # * Remove sentinel values (-9999) and replace with NaN
     df = df.replace({-9999: np.nan, '-9999': np.nan})
@@ -130,7 +121,7 @@ def impute_missing(df):
     logger.info(f"Support Numeric columns ({len(support_num)}): {support_num}")
     logger.info(f"Support Categorical columns ({len(support_cat)}): {support_cat}")
     logger.info(f"Default Numeric columns ({len(default_num)}): {default_num}")
-    logger.info(f"Default Categorical columns ({len(default_cat)}): {default_cat}")
+    logger.info(f"Default Categorical columns ({len(default_cat)}): {default_cat}\n")
 
     # * Define imputers for each group
     core_numerical_imputer = IterativeImputer(estimator=BayesianRidge(), max_iter=10, random_state=42)
@@ -190,7 +181,7 @@ def main():
     raw_df = utils.load_raw_data()
     df = drop_unnecessary_columns(raw_df)
 
-    initial_missing_values_report = missing_value_report(df)
+    initial_missing_values_report = utils.missing_value_report(df)
     logger.info(f"Initial missing value report shape: {initial_missing_values_report.shape}")
     # plot_missing_distribution(initial_missing_values_report)
 
@@ -198,7 +189,7 @@ def main():
     logger.info(f"Columns dropped: {len(dropped)}")
     logger.info(f"Columns remaining after drop: {df_clean.shape[1]}")
 
-    remaining_missing_values_report = missing_value_report(df_clean)
+    remaining_missing_values_report = utils.missing_value_report(df_clean)
     logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}")
     # plot_missing_distribution(remaining_missing_values_report)
     remaining_missing_values_report.to_csv(config.DROPPED_COLS_FILE)
