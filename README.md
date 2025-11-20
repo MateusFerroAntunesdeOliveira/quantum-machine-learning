@@ -1,91 +1,134 @@
-# Neuroimaging & Machine Learning
+# Machine Learning in Neuroscience: ASD Diagnosis Support
 
-## Project Overview
-This project explores the intersection of neuroimaging and machine learning. The primary goal is to preprocess and analyze anatomical and functional brain imaging data using classical machine learning (ML) techniques and quantum machine learning (QML). The project is part of a research initiative linked to a Master's program in Artificial Intelligence and Machine Learning applied to Neuroscience.
+![Python](https://img.shields.io/badge/python-3.12%2B-blue)
+![Manager](https://img.shields.io/badge/manager-uv-purple)
+![Status](https://img.shields.io/badge/status-research-orange)
 
-## Instructions
-Download ADHD using "*Option 2: Download using a bash script*" and following - [How to Download ADHD200](https://fcon_1000.projects.nitrc.org/indi/adhd200/download_scripts/Download_Instructions_ADHD200.pdf)
+A computational pipeline developed as part of a **Master's Thesis in Electrical Engineering (Bioinformatics/AI)** at the **Federal University of Paraná (UFPR)**. 
 
-The references for this project are:
+This project applies advanced Machine Learning techniques to phenotypic data from the **ABIDE I (Autism Brain Imaging Data Exchange)** repository to aid in the objective diagnosis of Autism Spectrum Disorder (ASD).
 
-- [Quantum Intelligence Alliance](https://github.com/Advanced-Research-Centre)
+## Project Background & Problem Statement
 
-## Data Structure
-The dataset consists of neuroimaging data collected from participants, including both anatomical and functional MRI scans. The data is organized as follows:
+**Context:**
+Autism Spectrum Disorder (ASD) is a neurodevelopmental condition characterized by deficits in social communication and restricted behavioral patterns. Current diagnosis is predominantly clinical (ADOS-2, ADI-R) but faces challenges regarding subjectivity and accessibility.
 
-### **1. Data Folder (`data/`):**
-This folder contains the neuroimaging data of participants, structured as follows:
+**The Problem:**
+* **Subjectivity:** Behavioral assessments can vary between clinicians.
+* **Late Diagnosis:** Delays in identification impact access to early interventions.
+* **Complexity:** High heterogeneity of the spectrum and comorbidity with other conditions makes classification difficult.
 
-- **`download_folder/NeuroIMAGE/`**
-  - Contains multiple subdirectories named in the format `sub-XX`, where `XX` is the participant ID.
-  - Each participant's folder follows this structure:
-    
-    - **Anatomical Data (`anat/`):**
-      - Contains T1-weighted anatomical MRI scans in NIfTI format (`.nii.gz`).
-      - Example file: `sub-0027003_ses-1_run-1_T1w.nii.gz`.
-      
-    - **Functional Data (`func/`):**
-      - Contains functional MRI (fMRI) scans collected during resting-state tasks.
-      - Example file: `sub-0027003_ses-1_task-rest_run-1_bold.nii.gz`.
-      
-    - **Participant Information (`participants.tsv`):**
-      - A tab-separated values file containing metadata about participants, including:
-        - `participant_id`: Unique identifier.
-        - `gender`: Male/Female.
-        - `age`: Age in years.
-        - `handedness`: Left/Right-handed.
-        - `dx`: Diagnosis (e.g., ADHD-Combined, Control).
-        - `iq_measure`: IQ measurement method.
-        - `full2_iq`: IQ score.
-        - `qc_rest_1`: Quality control status for resting-state fMRI.
-        - `qc_anatomical_1`: Quality control status for anatomical MRI.
-        - `disclaimer`: Data usage restrictions.
-      
-    - **Additional Metadata (`T1w.json`):**
-      - Contains details about MRI acquisition procedures.
+**Objective:**
+To develop a robust, reproducible computational pipeline that classifies ASD vs. Control subjects using phenotypic data. The project aims to identify key **biomarkers** using Explainable AI (XAI) to support clinical decision-making.
 
-### **2. Source Code (`src/`):**
-This folder contains the scripts necessary for processing and analyzing the neuroimaging data.
-- `main.py`: The main script for data loading, preprocessing, and model training.
+## Solution Architecture
 
-## Project Workflow
-The following steps outline the planned workflow for this project:
+The methodology follows a rigorous 6-step scientific pipeline:
 
-1. **Data Acquisition:**
-   - Download and structure the neuroimaging dataset (completed).
+1.  **Data Acquisition:** Utilization of the ABIDE I dataset via the Preprocessed Connectomes Project (PCP).
+2.  **Preprocessing & Cleaning:**
+    * Threshold-based column removal (handling missing data).
+    * **Hybrid Imputation Strategy:** Using **MICE** (Multivariate Imputation by Chained Equations) for core clinical attributes and **KNN** for supporting attributes.
+3.  **Feature Engineering:**
+    * Correlation analysis (Pearson, Spearman, PPS).
+    * Polynomial feature generation and PCA (Principal Component Analysis).
+4.  **Modeling:**
+    * Systematic comparison of classifiers: SVM, Random Forest, Gradient Boosting (XGBoost, LightGBM), and Ensembles (Voting/Stacking).
+5.  **Optimization:**
+    * Hyperparameter tuning using **Optuna** within a **Nested Cross-Validation** (k=10) framework to prevent data leakage.
+6.  **Explainability (XAI):**
+    * Interpretation of model decisions using **SHAP** (SHapley Additive exPlanations).
 
-2. **Data Preprocessing:**
-   - Convert NIfTI images into numerical arrays.
-   - Perform normalization and feature extraction.
+## Technology Stack
 
-3. **Machine Learning Pipeline:**
-   - Apply classical ML models to classify ADHD vs. control subjects.
-   - Train, validate, and optimize ML algorithms.
+This project is built on a modern Data Science stack and managed by **`uv`**.
 
-4. **Quantum Machine Learning (QML) Implementation:**
-   - Reapply the dataset to QML models using Qiskit and other quantum libraries.
-   - Compare the performance of classical ML and QML.
+* **Core:** Python 3.12+
+* **Package Manager:** `uv` (Astral)
+* **Data Manipulation:** `pandas`, `numpy`
+* **Machine Learning:** `scikit-learn`, `xgboost`, `lightgbm`
+* **Optimization:** `optuna`
+* **Visualization & XAI:** `matplotlib`, `seaborn`, `shap`, `ppscore`
 
-5. **Results Analysis & Documentation:**
-   - Evaluate accuracy, efficiency, and interpretability of models.
-   - Prepare a research article for submission to an Elsevier journal using Overleaf.
+## Project Structure
 
-## Dependencies & Setup
-Ensure the following Python packages are installed:
-```bash
-pip install -r requirements.txt
+```text
+.
+├── data
+│   ├── input   # Raw phenotypic data (Phenotypic_V1_0b_preprocessed1.csv)
+│   └── output  # Processed datasets (imputed) and results
+├── logs
+│   └── run_asd.log         # Main pipeline log file
+├── src
+│   ├── run_asd.py          # Main pipeline: Preprocessing & Feature Engineering
+│   ├── train_pipeline.py   # (Planned) Training, Nested CV & Optuna
+│   └── utils.py            # Helper functions
+├── pyproject.toml          # Project dependencies managed by uv
+├── uv.lock
+└── README.md
 ```
 
-To run the main processing script:
+## Getting Started
+
+Follow these instructions to set up the research environment on your local machine.
+
+### Prerequisites
+
+You must have `uv` installed. It handles the virtual environment and package installation with extreme speed.
+
 ```bash
-python src/main.py
+# On Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# On Linux/macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-## Future Work
-- Further fine-tuning of classical and quantum models.
-- Extending the dataset to include additional neuroimaging sources.
-- Exploring deep learning techniques for enhanced pattern recognition.
+### Installation
 
----
-This research contributes to advancing AI applications in neuroscience by leveraging cutting-edge ML and QML techniques to analyze brain imaging data.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/yourusername/yourrepository.git
+    cd yourrepository
+    ```
+2.  **Sync dependencies:** This command creates the virtual environment and installs all required packages defined in `pyproject.toml`.
+    ```bash
+    uv sync
+    ```
 
+### Data Setup
+
+*Note: Raw medical data is not committed to the repository.*
+
+1. Download the `Phenotypic_V1_0b_preprocessed1.csv` from the ABIDE/PCP website.
+2. Place it in the `data/input/` directory.
+
+### Running the Pipeline
+
+To run the main preprocessing and engineering script:
+
+```bash
+uv run src/run_asd.py
+```
+
+## Roadmap
+
+* [X] **Phase 1:** Data Acquisition & Exploratory Analysis.
+* [X] **Phase 2:** Advanced Preprocessing (MICE Imputation pipeline).
+* [ ] **Phase 3:** Feature Selection & Engineering (Current Focus).
+* [ ] **Phase 4:** Model Training with Nested Cross-Validation.
+* [ ] **Phase 5:** Hyperparameter Optimization (Optuna).
+* [ ] **Phase 6:** Explainability Analysis (SHAP) & Final Reporting.
+
+<br>
+
+----
+
+
+**Author:** Mateus Ferro Antunes de Oliveira, M.Sc. Student
+
+**Institution:** Universidade Federal do Paraná (UFPR)
+
+**Advisor:** Prof. Dr. Leandro dos Santos Coelho
+
+**Contact:** [mateus.ferro.2001@hotmail.com](mailto:mateus.ferro.2001@hotmail.com)
