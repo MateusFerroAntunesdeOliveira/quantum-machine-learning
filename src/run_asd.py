@@ -1,5 +1,7 @@
+import os
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="ppscore")
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -51,26 +53,26 @@ SUPPORTING_ATTRIBUTES = [
     'SEX',                     # Gender (1=Male, 2=Female)
     'EYE_STATUS_AT_SCAN',      # Eye status (1=Open, 2=Closed)
     'HANDEDNESS_CATEGORY',     # Handedness (R=Right, L=Left)
-    'SITE_ID',
+    'SITE_ID',                 # Site Identifier
     'SUB_IN_SMP',
 
     'FIQ',                     # Full IQ Standard Score (3% missing)
-    'VIQ',                     # Verbal IQ Standard Score (16%)
-    'PIQ',                     # Perfomance IQ Standard Score (14%)
-    'FIQ_TEST_TYPE',
-    'VIQ_TEST_TYPE',
-    'PIQ_TEST_TYPE',
+    'VIQ',                     # Verbal IQ Standard Score (16% missing)
+    'PIQ',                     # Perfomance IQ Standard Score (14% missing)
+    'FIQ_TEST_TYPE',           # IQ Test Used for Full Scale IQ (15% missing)
+    'VIQ_TEST_TYPE',           # IQ Test Used for Verbal IQ (25% missing)
+    'PIQ_TEST_TYPE',           # IQ Test Used for Perfomance IQ (24% missing)
 
     # Clinical Situation
     'CURRENT_MED_STATUS',      # Current medication status (26% missing)
-    
+
     # Anatomic Data
     'anat_cnr','anat_efc','anat_fber','anat_fwhm','anat_qi1','anat_snr',
-    
+
     # Functional Quality & Motion
     'func_efc','func_fber','func_fwhm','func_dvars','func_outlier','func_quality',
     'func_mean_fd','func_num_fd','func_perc_fd','func_gsr',
-    
+
     # Manual QC (not text notes)
     'qc_rater_1','qc_anat_rater_2','qc_func_rater_2','qc_anat_rater_3','qc_func_rater_3'
 ]
@@ -114,7 +116,7 @@ def missing_value_report(df):
     missing_value['% Missing'] = 100 * missing_value['Total Missing'] / len(df)
     missing_value.drop("Total Missing", axis=1, inplace=True)
     print('\n[2] Missing value summary:')
-    print(missing_value.head())
+    print(missing_value.head(120))
     return missing_value
 
 def plot_missing_distribution(missing_values, bins=20):
@@ -172,11 +174,15 @@ def impute_missing(df):
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = df.select_dtypes(include=['object','category']).columns.tolist()
 
-    core_num    = [c for c in CORE_ATTRIBUTES       if c in num_cols]
+    # * Safe intersection - ensure columns exist in df
+    core_num =    [c for c in CORE_ATTRIBUTES       if c in num_cols]
     support_num = [c for c in SUPPORTING_ATTRIBUTES if c in num_cols]
     support_cat = [c for c in SUPPORTING_ATTRIBUTES if c in cat_cols]
-    default_num = [c for c in num_cols              if c not in core_num + support_num]
-    default_cat = [c for c in cat_cols              if c not in support_cat]
+
+    # * What's left are default columns
+    defined_cols = set(core_num + support_num + support_cat)
+    default_num = [c for c in num_cols if c not in defined_cols]
+    default_cat = [c for c in cat_cols if c not in defined_cols]
 
     print(f"\n    Core Numeric columns ({len(core_num)}): {core_num}")
     print(f"\n    Support Numeric columns ({len(support_num)}): {support_num}")
@@ -184,33 +190,29 @@ def impute_missing(df):
     print(f"\n    Default Numeric columns ({len(default_num)}): {default_num}")
     print(f"\n    Default Categorical columns ({len(default_cat)}): {default_cat}")
 
-    core_imp        = IterativeImputer(estimator=BayesianRidge(), max_iter=10, random_state=0)
-    support_num_imp = KNNImputer(n_neighbors=5)
-    support_cat_imp = SimpleImputer(strategy='most_frequent')
-    default_num_imp = SimpleImputer(strategy='median')
-    default_cat_imp = SimpleImputer(strategy='most_frequent')
+    # * Define imputers for each group
+    core_numerical_imputer = IterativeImputer(estimator=BayesianRidge(), max_iter=10, random_state=42)
+    support_numerical_imputer = KNNImputer(n_neighbors=5)
+    simple_frequent_imputer = SimpleImputer(strategy='most_frequent')
+    simple_median_imputer = SimpleImputer(strategy='median')
 
+    # * Column Transformer with verbose_feature_names_out=False to keep original clean names
     transformer = ColumnTransformer([
-        ('core_num',  core_imp,        core_num),
-        ('sup_num',   support_num_imp, support_num),
-        ('sup_cat',   support_cat_imp, support_cat),
-        ('num_def',   default_num_imp, default_num),
-        ('cat_def',   default_cat_imp, default_cat),
-    ], remainder='drop')
+        ('core_num',  core_numerical_imputer,    core_num),
+        ('sup_num',   support_numerical_imputer, support_num),
+        ('sup_cat',   simple_frequent_imputer,   support_cat),
+        ('num_def',   simple_median_imputer,     default_num),
+        ('cat_def',   simple_frequent_imputer,   default_cat),
+    ], remainder='drop', verbose_feature_names_out=False)
 
-    imputed_values = transformer.fit_transform(df)
-    out_cols = core_num + support_num + support_cat + default_num + default_cat
-    print(f"\n    Imputed shape: {imputed_values.shape}")
-
-    df_imputed = pd.DataFrame(imputed_values, columns=out_cols, index=df.index)
-    print(f"\n    Imputed df columns ({len(df_imputed.columns)}): {df_imputed.columns.tolist()}")
-
-    numeric_cols = core_num + support_num + default_num
-    df_imputed[numeric_cols] = df_imputed[numeric_cols].astype(float)
-    df_imputed = df_imputed.reindex(columns=df.columns)
-
+    # * Enable direct pandas output - new in sklearn 1.2+
+    transformer.set_output(transform='pandas')
+    
+    print(f"\n    Fitting and transforming data for imputation...")
+    df_imputed = transformer.fit_transform(df)
     missing_after = df_imputed.isnull().sum().sum()
-    print(f"\nTotal missing after imputation: {missing_after}")
+    print(f"    Final Shape: {df_imputed.shape}")
+    print(f"    Total missing after imputation: {missing_after}\n")
 
     return df_imputed
 
@@ -245,20 +247,30 @@ def compute_pps_matrix(df, target_col='DX_GROUP'):
 
 def main():
     path = 'data/input/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
+
+    if not os.path.exists(path):
+        print(f"Input data file not found at: {path}")
+        return
+
     raw_df = load_data(path)
     df = drop_by_unnecessary_columns(raw_df)
 
     missing_values = missing_value_report(df)
-    plot_missing_distribution(missing_values)
+    # plot_missing_distribution(missing_values)
 
-    # thresholds = {'core': 0.8, 'support': 0.5, 'rare': 0.3, 'default': 0.5}
-    # df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
-    # remaining_missing_values = missing_value_report(df_clean)
+    thresholds = {'core': 0.8, 'support': 0.5, 'rare': 0.3, 'default': 0.5}
+    df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
+    remaining_missing_values = missing_value_report(df_clean)
     # plot_missing_distribution(remaining_missing_values)
-    # remaining_missing_values.to_csv('data/output/remaining_missing_values.csv')
+    remaining_missing_values.to_csv('data/output/remaining_missing_values.csv')
 
-    # df_imputed = impute_missing(df_clean)
-    # df_imputed.to_csv('data/output/imputed_data.csv', index=False)
+    df_imputed = impute_missing(df_clean)
+
+    # * Ensure DX_GROUP is integer after imputation    
+    if 'DX_GROUP' in df_imputed.columns:
+        df_imputed['DX_GROUP'] = df_imputed['DX_GROUP'].astype(int)  
+
+    df_imputed.to_csv('data/output/imputed_data.csv', index=False)
 
     # pearson = compute_pearson_correlation(df_imputed)
     # plt.figure(figsize=(12, 10))
