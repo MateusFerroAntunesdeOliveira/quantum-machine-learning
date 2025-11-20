@@ -23,80 +23,10 @@ from sklearn.impute import IterativeImputer, KNNImputer, SimpleImputer
 from sklearn.linear_model import BayesianRidge
 from sklearn.compose import ColumnTransformer
 
+from . import config
+
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
-
-INPUT_DATA_PATH = 'data/input/Phenotypic_V1_0b_preprocessed1_from_shawon.csv'
-OUTPUT_IMPUTED_DATA_PATH = 'data/output/imputed_data.csv'
-REMAINING_MISSING_VALUES_PATH = 'data/output/remaining_missing_values.csv'
-LOG_OUTPUT_PATH = 'logs/run_asd.log'
-TARGET_COLUMN = 'DX_GROUP'
-
-CORE_ATTRIBUTES = [
-    TARGET_COLUMN,             # Diagnostic Group (1=Autism, 2=Control)
-    'DSM_IV_TR',               # Diagnostic Group (0=none, 1=Autism, 3=Aspergers, 4=PDD-NOS)
-
-    # ADI-R: Autism Diagnostic Interview-Revised
-    'ADI_R_SOCIAL_TOTAL_A',    # Social (63% missing)
-    'ADI_R_VERBAL_TOTAL_BV',   # Verbal (63% missing)
-    'ADI_RRB_TOTAL_C',         # Repetitive behaviors (63% missing)
-    'ADI_R_ONSET_TOTAL_D',     # Onset (70% missing)
-    'ADI_R_RSRCH_RELIABLE',    # Reliability (63% missing)
-
-    # ADOS: Autism Diagnostic Observation Schedule
-    'ADOS_MODULE',             # Module applied (52% missing)
-    'ADOS_TOTAL',              # Total (60% missing)
-    'ADOS_COMM',               # Communication (62.5% missing)
-    'ADOS_SOCIAL',             # Social (62.5% missing)
-    'ADOS_STEREO_BEHAV',       # Stereotypies behaviors (66% missing)
-    'ADOS_RSRCH_RELIABLE',     # Reliability (66% missing)
-    
-    # SRS - Social Responsiveness Scale
-    'SRS_RAW_TOTAL',           # Total Score (63% missing)
-]
-
-SUPPORTING_ATTRIBUTES = [
-    'AGE_AT_SCAN',             # Age at scan
-    'SEX',                     # Gender (1=Male, 2=Female)
-    'EYE_STATUS_AT_SCAN',      # Eye status (1=Open, 2=Closed)
-    'HANDEDNESS_CATEGORY',     # Handedness (R=Right, L=Left)
-    'SITE_ID',                 # Site Identifier
-    'SUB_IN_SMP',
-
-    'FIQ',                     # Full IQ Standard Score (3% missing)
-    'VIQ',                     # Verbal IQ Standard Score (16% missing)
-    'PIQ',                     # Perfomance IQ Standard Score (14% missing)
-    'FIQ_TEST_TYPE',           # IQ Test Used for Full Scale IQ (15% missing)
-    'VIQ_TEST_TYPE',           # IQ Test Used for Verbal IQ (25% missing)
-    'PIQ_TEST_TYPE',           # IQ Test Used for Perfomance IQ (24% missing)
-
-    # Clinical Situation
-    'CURRENT_MED_STATUS',      # Current medication status (26% missing)
-
-    # Anatomic Data
-    'anat_cnr','anat_efc','anat_fber','anat_fwhm','anat_qi1','anat_snr',
-
-    # Functional Quality & Motion
-    'func_efc','func_fber','func_fwhm','func_dvars','func_outlier','func_quality',
-    'func_mean_fd','func_num_fd','func_perc_fd','func_gsr',
-
-    # Manual QC (not text notes)
-    'qc_rater_1','qc_anat_rater_2','qc_func_rater_2','qc_anat_rater_3','qc_func_rater_3'
-]
-
-RARE_ATTRIBUTES = [
-    # Secondary screening
-    'SCQ_TOTAL',               # Social Communication Questionnaire (87% missing)
-    'AQ_TOTAL',                # Autism Quotient Total Raw Score (94% missing)
-
-    # Detailed subscales of SRS (Social Responsiveness Scale)
-    'SRS_AWARENESS','SRS_COGNITION','SRS_COMMUNICATION','SRS_MOTIVATION','SRS_MANNERISMS',
-
-    # QC (Quality Control) notes (textual)
-    'qc_notes_rater_1','qc_anat_notes_rater_2','qc_func_notes_rater_2',
-    'qc_anat_notes_rater_3','qc_func_notes_rater_3',
-    'MEDICATION_NAME','COMORBIDITY','OFF_STIMULANTS_AT_SCAN'
-]
 
 logging.basicConfig(
     level=logging.INFO,
@@ -104,7 +34,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(LOG_OUTPUT_PATH, encoding='utf-8')
+        logging.FileHandler(config.LOG_FILE, encoding='utf-8')
     ]
 )
 logger = logging.getLogger(__name__)
@@ -125,7 +55,7 @@ def drop_by_unnecessary_columns(df):
         - subject
     """
     print('\n[1] Dropping unnecessary columns...')
-    df = df.drop(columns=['Unnamed: 0.1', 'Unnamed: 0', 'SUB_ID', 'X', 'subject'], errors='ignore')
+    df = df.drop(columns=config.COLS_TO_DROP_INITIALLY, errors='ignore')
     print(f"    New shape after dropping unnecessary columns: {df.shape}")
     return df
 
@@ -156,11 +86,11 @@ def drop_by_missing_threshold(report, df, thresholds):
     """
     columns_to_remove = []
     for columns, percentage_missing in report['% Missing'].items():
-        if columns in CORE_ATTRIBUTES:
+        if columns in config.CORE_ATTRIBUTES:
             limit = thresholds['core']
-        elif columns in SUPPORTING_ATTRIBUTES:
+        elif columns in config.SUPPORTING_ATTRIBUTES:
             limit = thresholds['support']
-        elif columns in RARE_ATTRIBUTES:
+        elif columns in config.RARE_ATTRIBUTES:
             limit = thresholds['rare']
         else:
             limit = thresholds['default']
@@ -193,9 +123,9 @@ def impute_missing(df):
     cat_cols = df.select_dtypes(include=['object','category']).columns.tolist()
 
     # * Safe intersection - ensure columns exist in df
-    core_num =    [c for c in CORE_ATTRIBUTES       if c in num_cols]
-    support_num = [c for c in SUPPORTING_ATTRIBUTES if c in num_cols]
-    support_cat = [c for c in SUPPORTING_ATTRIBUTES if c in cat_cols]
+    core_num =    [c for c in config.CORE_ATTRIBUTES       if c in num_cols]
+    support_num = [c for c in config.SUPPORTING_ATTRIBUTES if c in num_cols]
+    support_cat = [c for c in config.SUPPORTING_ATTRIBUTES if c in cat_cols]
 
     # * What's left are default columns
     defined_cols = set(core_num + support_num + support_cat)
@@ -252,7 +182,7 @@ def compute_spearman_correlation(df):
     spearman = num.corr(method='spearman')
     return spearman
 
-def compute_pps_matrix(df, target_col=TARGET_COLUMN):
+def compute_pps_matrix(df, target_col=config.TARGET_COLUMN):
     """
     Compute the Predictive Power Score (PPS) matrix for the given DataFrame.
     The target column is specified by the `target_col` parameter.
@@ -264,30 +194,29 @@ def compute_pps_matrix(df, target_col=TARGET_COLUMN):
     return pps_pivot
 
 def main():
-    if not os.path.exists(INPUT_DATA_PATH):
-        print(f"Input data file not found at: {INPUT_DATA_PATH}")
+    if not os.path.exists(config.RAW_DATA_FILE):
+        print(f"Input data file not found at: {config.RAW_DATA_FILE}")
         return
 
-    raw_df = load_data(INPUT_DATA_PATH)
+    raw_df = load_data(config.RAW_DATA_FILE)
     df = drop_by_unnecessary_columns(raw_df)
 
     missing_values = missing_value_report(df)
     # plot_missing_distribution(missing_values)
 
-    thresholds = {'core': 0.8, 'support': 0.5, 'rare': 0.3, 'default': 0.5}
-    df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=thresholds)
+    df_clean, dropped = drop_by_missing_threshold(missing_values, df, thresholds=config.MISSING_THRESHOLDS)
     remaining_missing_values = missing_value_report(df_clean)
     # plot_missing_distribution(remaining_missing_values)
-    remaining_missing_values.to_csv(REMAINING_MISSING_VALUES_PATH)
+    remaining_missing_values.to_csv(config.DROPPED_COLS_FILE)
 
     df_imputed = impute_missing(df_clean)
 
     # * Ensure TARGET_COLUMN (DX_GROUP) is integer after imputation    
-    if TARGET_COLUMN in df_imputed.columns:
-        df_imputed[TARGET_COLUMN] = df_imputed[TARGET_COLUMN].astype(int)  
+    if config.TARGET_COLUMN in df_imputed.columns:
+        df_imputed[config.TARGET_COLUMN] = df_imputed[config.TARGET_COLUMN].astype(int)  
 
-    df_imputed.to_csv(OUTPUT_IMPUTED_DATA_PATH, index=False)
-    logger.info(f"Imputed data saved to: {OUTPUT_IMPUTED_DATA_PATH}")
+    df_imputed.to_csv(config.IMPUTED_DATA_FILE, index=False)
+    logger.info(f"Imputed data saved to: {config.IMPUTED_DATA_FILE}")
 
     # pearson = compute_pearson_correlation(df_imputed)
     # plt.figure(figsize=(12, 10))

@@ -1,0 +1,108 @@
+from pathlib import Path
+
+# * Command Center for Project Settings, Paths, Parameters, and Column Definitions
+
+# --- PROJECT STRUCTURE ---
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+INPUT_DIR = DATA_DIR / "input"
+OUTPUT_DIR = DATA_DIR / "output"
+LOG_DIR = BASE_DIR / "logs"
+
+# Ensure dirs exist
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# --- FILE PATHS ---
+LOG_FILE = LOG_DIR / "execution.log"
+RAW_DATA_FILE = INPUT_DIR / "Phenotypic_V1_0b_preprocessed1_from_shawon.csv"
+DROPPED_COLS_FILE = OUTPUT_DIR / "dropped_columns_report.csv"
+IMPUTED_DATA_FILE = OUTPUT_DIR / "imputed_data.csv"
+
+# --- ID HANDLING ---
+# * Column to be renamed to ID (usually the index from raw CSV)
+RAW_ID_COL = 'Unnamed: 0' 
+ID_COL = 'ID'
+
+# --- PARAMETERS ---
+MISSING_THRESHOLDS = {
+    'core': 0.7,               # 70% tolerance for critical clinical features. Accept up to 69% missing.
+    'support': 0.3,            # 30% for supporting. Accept up to 29% missing.
+    'rare': 0.3,               # 30% for rare/other. Accept up to 29% missing.
+    'default': 0.5             # 50% for any other columns. Accept up to 49% missing.
+}
+
+# --- COLUMNS DEFINITIONS ---
+TARGET_COLUMN = 'DX_GROUP'
+
+COLS_TO_DROP_INITIALLY = [
+    'Unnamed: 0.1',            # Duplicate index column
+    'X',                       # Unknown
+    'SUB_ID',                  # ABIDE Subject Identifier
+    'subject',                 # Subject Identifier
+]
+
+CORE_ATTRIBUTES = [
+    TARGET_COLUMN,             # Diagnostic Group (1=Autism, 2=Control)
+    'DSM_IV_TR',               # Diagnostic Group (0=none, 1=Autism, 3=Aspergers, 4=PDD-NOS)
+
+    # ADI-R: Autism Diagnostic Interview-Revised
+    'ADI_R_SOCIAL_TOTAL_A',    # Social (63% missing)
+    'ADI_R_VERBAL_TOTAL_BV',   # Verbal (63% missing)
+    'ADI_RRB_TOTAL_C',         # Repetitive behaviors (63% missing)
+    'ADI_R_ONSET_TOTAL_D',     # Onset (70% missing)
+    'ADI_R_RSRCH_RELIABLE',    # Reliability (63% missing)
+
+    # ADOS: Autism Diagnostic Observation Schedule
+    'ADOS_MODULE',             # Module applied (52% missing)
+    'ADOS_TOTAL',              # Total (60% missing)
+    'ADOS_COMM',               # Communication (62.5% missing)
+    'ADOS_SOCIAL',             # Social (62.5% missing)
+    'ADOS_STEREO_BEHAV',       # Stereotypies behaviors (66% missing)
+    'ADOS_RSRCH_RELIABLE',     # Reliability (66% missing)
+    
+    # SRS - Social Responsiveness Scale
+    'SRS_RAW_TOTAL',           # Total Score (63% missing)
+]
+
+SUPPORTING_ATTRIBUTES = [
+    'AGE_AT_SCAN',             # Age at scan
+    'SEX',                     # Gender (1=Male, 2=Female)
+    'EYE_STATUS_AT_SCAN',      # Eye status (1=Open, 2=Closed)
+    'HANDEDNESS_CATEGORY',     # Handedness (R=Right, L=Left)
+    'SITE_ID',                 # Site Identifier
+    'SUB_IN_SMP',
+
+    'FIQ',                     # Full IQ Standard Score (3% missing)
+    'VIQ',                     # Verbal IQ Standard Score (16% missing)
+    'PIQ',                     # Perfomance IQ Standard Score (14% missing)
+    'FIQ_TEST_TYPE',           # IQ Test Used for Full Scale IQ (15% missing)
+    'VIQ_TEST_TYPE',           # IQ Test Used for Verbal IQ (25% missing)
+    'PIQ_TEST_TYPE',           # IQ Test Used for Perfomance IQ (24% missing)
+
+    # Clinical Situation
+    'CURRENT_MED_STATUS',      # Current medication status (26% missing)
+
+    # Anatomic Data
+    'anat_cnr','anat_efc','anat_fber','anat_fwhm','anat_qi1','anat_snr',
+
+    # Functional Quality & Motion
+    'func_efc','func_fber','func_fwhm','func_dvars','func_outlier','func_quality',
+    'func_mean_fd','func_num_fd','func_perc_fd','func_gsr',
+
+    # Manual QC (not text notes)
+    'qc_rater_1','qc_anat_rater_2','qc_func_rater_2','qc_anat_rater_3','qc_func_rater_3'
+]
+
+RARE_ATTRIBUTES = [
+    # Secondary screening
+    'SCQ_TOTAL',               # Social Communication Questionnaire (87% missing)
+    'AQ_TOTAL',                # Autism Quotient Total Raw Score (94% missing)
+
+    # Detailed subscales of SRS (Social Responsiveness Scale)
+    'SRS_AWARENESS','SRS_COGNITION','SRS_COMMUNICATION','SRS_MOTIVATION','SRS_MANNERISMS',
+
+    # QC (Quality Control) notes (textual)
+    'qc_notes_rater_1','qc_anat_notes_rater_2','qc_func_notes_rater_2',
+    'qc_anat_notes_rater_3','qc_func_notes_rater_3',
+    'MEDICATION_NAME','COMORBIDITY','OFF_STIMULANTS_AT_SCAN'
+]
