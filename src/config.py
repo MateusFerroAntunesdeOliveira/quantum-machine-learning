@@ -46,22 +46,22 @@ CORE_ATTRIBUTES = [
     'DSM_IV_TR',               # Diagnostic Group (0=none, 1=Autism, 3=Aspergers, 4=PDD-NOS)
 
     # ADI-R: Autism Diagnostic Interview-Revised
-    'ADI_R_SOCIAL_TOTAL_A',    # Social (63% missing)
-    'ADI_R_VERBAL_TOTAL_BV',   # Verbal (63% missing)
-    'ADI_RRB_TOTAL_C',         # Repetitive behaviors (63% missing)
-    'ADI_R_ONSET_TOTAL_D',     # Onset (70% missing)
-    'ADI_R_RSRCH_RELIABLE',    # Reliability (63% missing)
+    'ADI_R_SOCIAL_TOTAL_A',    # Social (66% missing)
+    'ADI_R_VERBAL_TOTAL_BV',   # Verbal (66% missing)
+    'ADI_RRB_TOTAL_C',         # Repetitive behaviors (66% missing)
+    'ADI_R_ONSET_TOTAL_D',     # Onset (73% missing)
+    'ADI_R_RSRCH_RELIABLE',    # Reliability (65% missing)
 
     # ADOS: Autism Diagnostic Observation Schedule
-    'ADOS_MODULE',             # Module applied (52% missing)
-    'ADOS_TOTAL',              # Total (60% missing)
-    'ADOS_COMM',               # Communication (62.5% missing)
-    'ADOS_SOCIAL',             # Social (62.5% missing)
-    'ADOS_STEREO_BEHAV',       # Stereotypies behaviors (66% missing)
+    'ADOS_MODULE',             # Module applied (54% missing)
+    'ADOS_TOTAL',              # Total (63% missing)
+    'ADOS_COMM',               # Communication (65% missing)
+    'ADOS_SOCIAL',             # Social (65% missing)
+    'ADOS_STEREO_BEHAV',       # Stereotypies behaviors (70% missing)
     'ADOS_RSRCH_RELIABLE',     # Reliability (66% missing)
     
     # SRS - Social Responsiveness Scale
-    'SRS_RAW_TOTAL',           # Total Score (63% missing)
+    'SRS_RAW_TOTAL',           # Total Score (67% missing)
 ]
 
 SUPPORTING_ATTRIBUTES = [
@@ -72,15 +72,15 @@ SUPPORTING_ATTRIBUTES = [
     'SITE_ID',                 # Site Identifier
     'SUB_IN_SMP',
 
-    'FIQ',                     # Full IQ Standard Score (3% missing)
-    'VIQ',                     # Verbal IQ Standard Score (16% missing)
-    'PIQ',                     # Perfomance IQ Standard Score (14% missing)
+    'FIQ',                     # Full IQ Standard Score (6% missing)
+    'VIQ',                     # Verbal IQ Standard Score (17% missing)
+    'PIQ',                     # Perfomance IQ Standard Score (16% missing)
     'FIQ_TEST_TYPE',           # IQ Test Used for Full Scale IQ (15% missing)
     'VIQ_TEST_TYPE',           # IQ Test Used for Verbal IQ (25% missing)
     'PIQ_TEST_TYPE',           # IQ Test Used for Perfomance IQ (24% missing)
 
     # Clinical Situation
-    'CURRENT_MED_STATUS',      # Current medication status (26% missing)
+    'CURRENT_MED_STATUS',      # Current medication status (27% missing)
 
     # Anatomic Data
     'anat_cnr','anat_efc','anat_fber','anat_fwhm','anat_qi1','anat_snr',
@@ -95,8 +95,8 @@ SUPPORTING_ATTRIBUTES = [
 
 RARE_ATTRIBUTES = [
     # Secondary screening
-    'SCQ_TOTAL',               # Social Communication Questionnaire (87% missing)
-    'AQ_TOTAL',                # Autism Quotient Total Raw Score (94% missing)
+    'SCQ_TOTAL',               # Social Communication Questionnaire (88% missing)
+    'AQ_TOTAL',                # Autism Quotient Total Raw Score (95% missing)
 
     # Detailed subscales of SRS (Social Responsiveness Scale)
     'SRS_AWARENESS','SRS_COGNITION','SRS_COMMUNICATION','SRS_MOTIVATION','SRS_MANNERISMS',
