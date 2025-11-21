@@ -1,6 +1,7 @@
 import logging
 import os
 import warnings
+
 warnings.filterwarnings("ignore", category=UserWarning, module="ppscore")
 warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 
@@ -25,34 +26,14 @@ from sklearn.compose import ColumnTransformer
 
 from . import config
 from . import utils
+from . import logger
+from .processing import cleaning
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(config.LOG_FILE, encoding='utf-8')
-    ]
-)
+logger.setup_logging()
 logger = logging.getLogger(__name__)
-
-def drop_unnecessary_columns(df):
-    """
-    Remove unnecessary columns from the dataset.
-    Includes:
-        - Unnamed columns
-        - SUB_ID
-        - X
-        - subject
-    """
-    logger.info(f"Initial shape before dropping unnecessary columns: {df.shape}")
-    df = df.drop(columns=config.COLS_TO_DROP_INITIALLY, errors='ignore')
-    logger.info(f"New shape after dropping unnecessary columns: {df.shape}")
-    return df
 
 def plot_missing_distribution(missing_values, bins=20):
     """
@@ -66,28 +47,6 @@ def plot_missing_distribution(missing_values, bins=20):
     plt.grid(axis='y', alpha=0.75)
     plt.show()
 
-def drop_with_threshold(report, df, thresholds):
-    """
-    Conditionally drop columns based on thresholds dict:
-    Returns cleaned df and list of dropped columns.
-    """
-    columns_to_remove = []
-    for columns, percentage_missing in report['% Missing'].items():
-        if columns in config.CORE_ATTRIBUTES:
-            limit = thresholds['core']
-        elif columns in config.SUPPORTING_ATTRIBUTES:
-            limit = thresholds['support']
-        elif columns in config.RARE_ATTRIBUTES:
-            limit = thresholds['rare']
-        else:
-            limit = thresholds['default']
-        if percentage_missing/100 > limit:
-            columns_to_remove.append(columns)
-
-    logger.debug(f"Checking column '{columns}': missing {percentage_missing}%, limit {limit*100}%")
-    cleaned_df = df.drop(columns=columns_to_remove)
-    return cleaned_df, columns_to_remove
-
 def impute_missing(df):
     """
     Advanced imputation for three groups of colunas:
@@ -99,10 +58,7 @@ def impute_missing(df):
           - numeric: SimpleImputer(strategy='median')
           - categorical: SimpleImputer(strategy='most_frequent')
     """
-    logger.info(f"Imputing missing values with advanced strategy\n")
-
-    # * Remove sentinel values (-9999) and replace with NaN
-    df = df.replace({-9999: np.nan, '-9999': np.nan})
+    logger.info(f"Imputing missing values with advanced strategies...")
 
     num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = df.select_dtypes(include=['object','category']).columns.tolist()
@@ -179,13 +135,9 @@ def compute_pps_matrix(df, target_col=config.TARGET_COLUMN):
 
 def main():
     raw_df = utils.load_raw_data()
-    df = drop_unnecessary_columns(raw_df)
+    df = cleaning.initial_cleanup(raw_df)
 
-    initial_missing_values_report = utils.missing_value_report(df)
-    logger.info(f"Initial missing value report shape: {initial_missing_values_report.shape}")
-    # plot_missing_distribution(initial_missing_values_report)
-
-    df_clean, dropped = drop_with_threshold(report=initial_missing_values_report, df=df, thresholds=config.MISSING_THRESHOLDS)
+    df_clean, dropped = cleaning.drop_columns_by_threshold(df=df)
     logger.info(f"Columns dropped: {len(dropped)}")
     logger.info(f"Columns remaining after drop: {df_clean.shape[1]}")
 
