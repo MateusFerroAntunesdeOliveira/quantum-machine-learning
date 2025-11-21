@@ -90,7 +90,7 @@ def drop_columns_by_threshold(df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
         # Check missing percentage
         if col in report.index:
             # Get the percentage value for this column
-            pct_missing = report.loc[col, '% Missing']
+            pct_missing = report.loc[col, config.PERCENT_MISSING_COLUMN]
             threshold_percent = threshold_value * 100
 
             # When threshold is exceeded, mark for removal, else keep

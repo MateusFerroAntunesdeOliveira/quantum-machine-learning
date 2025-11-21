@@ -1,6 +1,7 @@
 # * Utils for Load, Save, Reports, and common operations
 
 import pandas as pd
+
 from . import config
 
 def load_raw_data() -> pd.DataFrame:
@@ -29,12 +30,12 @@ def missing_value_report(df: pd.DataFrame) -> pd.DataFrame:
     Calculates the percentage of missing values for columns that have missing data.
 
     Returns:
-        pd.DataFrame: A DataFrame with columns ['Column', '% Missing'] sorted by '% Missing' descending.
+        pd.DataFrame: A DataFrame with columns ['Column', config.PERCENT_MISSING_COLUMN] sorted by config.PERCENT_MISSING_COLUMN descending.
     """
     missing_value = df.isnull().sum()
     missing_value = missing_value.rename("Total Missing").to_frame()
     
-    missing_value['% Missing'] = 100 * missing_value['Total Missing'] / len(df)
+    missing_value[config.PERCENT_MISSING_COLUMN] = 100 * missing_value['Total Missing'] / len(df)
     missing_value.drop("Total Missing", axis=1, inplace=True)
 
     return missing_value

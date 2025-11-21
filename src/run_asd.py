@@ -40,7 +40,7 @@ def plot_missing_distribution(missing_values, bins=20):
     Plot histogram of % missing values across all features.
     """
     plt.figure(figsize=(10, 6))
-    plt.hist(missing_values['% Missing'], bins=bins, color='blue', alpha=0.7)
+    plt.hist(missing_values[config.PERCENT_MISSING_COLUMN], bins=bins, color='blue', alpha=0.7)
     plt.title('Distribution of Missingness Across Features')
     plt.xlabel('% Missing Values')
     plt.ylabel('Number of Columns')

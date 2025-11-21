@@ -33,8 +33,9 @@ MISSING_THRESHOLDS = {
 
 # --- COLUMNS DEFINITIONS ---
 TARGET_COLUMN = 'DX_GROUP'
+PERCENT_MISSING_COLUMN = '% Missing'
 
-COLS_TO_DROP_INITIALLY = [
+COLS_TO_DROP_UNUSED = [
     'Unnamed: 0.1',            # Duplicate index column
     'X',                       # Unknown
     'SUB_ID',                  # ABIDE Subject Identifier
