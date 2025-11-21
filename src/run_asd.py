@@ -73,11 +73,11 @@ def impute_missing(df):
     default_num = [c for c in num_cols if c not in defined_cols]
     default_cat = [c for c in cat_cols if c not in defined_cols]
 
-    logger.info(f"Core Numeric columns ({len(core_num)}): {core_num}")
-    logger.info(f"Support Numeric columns ({len(support_num)}): {support_num}")
-    logger.info(f"Support Categorical columns ({len(support_cat)}): {support_cat}")
-    logger.info(f"Default Numeric columns ({len(default_num)}): {default_num}")
-    logger.info(f"Default Categorical columns ({len(default_cat)}): {default_cat}\n")
+    logger.debug(f"Core Numeric columns ({len(core_num)}): {core_num}")
+    logger.debug(f"Support Numeric columns ({len(support_num)}): {support_num}")
+    logger.debug(f"Support Categorical columns ({len(support_cat)}): {support_cat}")
+    logger.debug(f"Default Numeric columns ({len(default_num)}): {default_num}")
+    logger.debug(f"Default Categorical columns ({len(default_cat)}): {default_cat}\n")
 
     # * Define imputers for each group
     core_numerical_imputer = IterativeImputer(estimator=BayesianRidge(), max_iter=10, random_state=42)
@@ -100,7 +100,7 @@ def impute_missing(df):
     logger.info(f"Fitting and transforming data for imputation...")
     df_imputed = transformer.fit_transform(df)
     missing_after = df_imputed.isnull().sum().sum()
-    logger.info(f"Imputation complete. Total missing values after imputation: {missing_after}")
+    logger.info(f"Successfully performed imputation. Total missing values after imputation: {missing_after}\n")
 
     return df_imputed
 
@@ -137,15 +137,23 @@ def main():
     raw_df = utils.load_raw_data()
     df = cleaning.initial_cleanup(raw_df)
 
-    df_clean, dropped = cleaning.drop_columns_by_threshold(df=df)
+    # * Initial missing values report
+    initial_missing_values_report = utils.missing_value_report(df)
+    logger.info(f"Initial missing value report shape: {initial_missing_values_report.shape}")
+    plot_missing_distribution(initial_missing_values_report)
+
+    # * Drop columns by threshold
+    df_clean, dropped = cleaning.drop_columns_by_threshold(df=df, report=initial_missing_values_report)
     logger.info(f"Columns dropped: {len(dropped)}")
     logger.info(f"Columns remaining after drop: {df_clean.shape[1]}")
 
+    # * Remaining missing values report
     remaining_missing_values_report = utils.missing_value_report(df_clean)
-    logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}")
-    # plot_missing_distribution(remaining_missing_values_report)
+    logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}\n")
+    plot_missing_distribution(remaining_missing_values_report)
     remaining_missing_values_report.to_csv(config.DROPPED_COLS_FILE)
 
+    # * Impute missing values
     df_imputed = impute_missing(df_clean)
 
     # * Ensure TARGET_COLUMN (DX_GROUP) is integer after imputation    
@@ -155,32 +163,27 @@ def main():
     df_imputed.to_csv(config.IMPUTED_DATA_FILE, index=False)
     logger.info(f"Imputed data saved to: {config.IMPUTED_DATA_FILE}")
 
+    pearson = compute_pearson_correlation(df_imputed)
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(pearson, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
+    plt.title('Pearson Correlation Matrix')
+    plt.show()
 
+    spearman = compute_spearman_correlation(df_imputed)
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(spearman, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
+    plt.title('Spearman Correlation Matrix')
+    plt.show()
 
-
-
-
-    # pearson = compute_pearson_correlation(df_imputed)
-    # plt.figure(figsize=(12, 10))
-    # sns.heatmap(pearson, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
-    # plt.title('Pearson Correlation Matrix')
-    # plt.show()
-
-    # spearman = compute_spearman_correlation(df_imputed)
-    # plt.figure(figsize=(12, 10))
-    # sns.heatmap(spearman, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, cbar_kws={"shrink": .8})
-    # plt.title('Spearman Correlation Matrix')
-    # plt.show()
-
-    # pps_df = compute_pps_matrix(df_imputed, target_col=TARGET_COLUMN)
-    # n_feats = pps_df.shape[0]
-    # plt.figure(figsize=(12, max(4, n_feats * 0.3)))
-    # sns.heatmap(pps_df, annot=True, fmt='.2f', cmap='coolwarm', cbar_kws={'shrink': 0.5}, annot_kws={'size': 9}, linewidths=0.5, square=False)
-    # plt.yticks(ticks=np.arange(n_feats) + 0.5, labels=pps_df.index, rotation=0, fontsize=8)
-    # plt.xticks(rotation=45, ha='right', fontsize=9)
-    # plt.title(f'PPS predicting {TARGET_COLUMN}')
-    # plt.tight_layout()
-    # plt.show()
+    pps_df = compute_pps_matrix(df_imputed, target_col=config.TARGET_COLUMN)
+    n_feats = pps_df.shape[0]
+    plt.figure(figsize=(12, max(4, n_feats * 0.3)))
+    sns.heatmap(pps_df, annot=True, fmt='.2f', cmap='coolwarm', cbar_kws={'shrink': 0.5}, annot_kws={'size': 9}, linewidths=0.5, square=False)
+    plt.yticks(ticks=np.arange(n_feats) + 0.5, labels=pps_df.index, rotation=0, fontsize=8)
+    plt.xticks(rotation=45, ha='right', fontsize=9)
+    plt.title(f'PPS predicting {config.TARGET_COLUMN}')
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == '__main__':
     main()

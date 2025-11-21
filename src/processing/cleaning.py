@@ -53,7 +53,7 @@ def drop_unused_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def drop_columns_by_threshold(df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
+def drop_columns_by_threshold(df: pd.DataFrame, report: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     """
     Analyzes missing data and drops columns that exceed the thresholds 
     defined in config.MISSING_THRESHOLDS for each attribute category.
@@ -62,9 +62,6 @@ def drop_columns_by_threshold(df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
         tuple: (cleaned_df, dropped_columns_list)
     """
     logger.info("Analyzing missing values against thresholds...")
-
-    # Get the report using the utility
-    report = utils.missing_value_report(df)
     columns_to_remove = []
 
     # Iterate over all columns in the dataframe
