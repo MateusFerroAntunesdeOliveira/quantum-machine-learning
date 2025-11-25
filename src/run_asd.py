@@ -24,9 +24,9 @@ from sklearn.impute import IterativeImputer, KNNImputer, SimpleImputer
 from sklearn.linear_model import BayesianRidge
 from sklearn.compose import ColumnTransformer
 
-from .utils import config
-from .utils import common
-from .utils import logger
+from .shared import config
+from .shared import utils
+from .shared import logger
 from .processing import cleaning
 
 pd.set_option('display.max_columns', None)
@@ -134,11 +134,11 @@ def compute_pps_matrix(df, target_col=config.TARGET_COLUMN):
     return pps_pivot
 
 def main():
-    raw_df = common.load_raw_data()
+    raw_df = utils.load_raw_data()
     df = cleaning.initial_cleanup(raw_df)
 
     # * Initial missing values report
-    initial_missing_values_report = common.missing_value_report(df)
+    initial_missing_values_report = utils.missing_value_report(df)
     logger.info(f"Initial missing value report shape: {initial_missing_values_report.shape}")
     # plot_missing_distribution(initial_missing_values_report)
 
@@ -148,10 +148,10 @@ def main():
     logger.info(f"Columns remaining after drop: {df_clean.shape[1]}")
 
     # * Remaining missing values report
-    remaining_missing_values_report = common.missing_value_report(df_clean)
+    remaining_missing_values_report = utils.missing_value_report(df_clean)
     logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}")
     # plot_missing_distribution(remaining_missing_values_report)
-    common.save_data(remaining_missing_values_report, config.DROPPED_COLS_FILE, label="remaining missing values report")
+    utils.save_data(remaining_missing_values_report, config.DROPPED_COLS_FILE, label="remaining missing values report")
 
     # * Impute missing values
     df_imputed = impute_missing(df_clean)

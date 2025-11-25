@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 import numpy as np
 
-from ..utils import config
+from ..shared import config
 
 # Get logger instance for this module
 logger = logging.getLogger(__name__)
