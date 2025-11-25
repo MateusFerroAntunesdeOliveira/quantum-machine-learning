@@ -35,7 +35,6 @@ def main():
         df_imputed[config.TARGET_COLUMN] = df_imputed[config.TARGET_COLUMN].astype(int)  
 
     utils.save_data(df_imputed, config.IMPUTED_DATA_FILE, index_value=False, label="Imputed Dataset")
-    logger.info(f"Imputed data saved to: {config.IMPUTED_DATA_FILE}")
 
 if __name__ == "__main__":
     main()
