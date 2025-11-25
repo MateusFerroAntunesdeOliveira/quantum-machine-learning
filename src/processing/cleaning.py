@@ -2,10 +2,10 @@
 
 import logging
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from ..shared import config
+from src.shared import config
 
 # Get logger instance for this module
 logger = logging.getLogger(__name__)
@@ -38,10 +38,10 @@ def rename_raw_id_column(df: pd.DataFrame) -> pd.DataFrame:
     """
     Renames the raw ID column to the standardized ID column name defined in config.
     """
-    if hasattr(config, 'RAW_ID_COL') and hasattr(config, 'ID_COL'):
-        if config.RAW_ID_COL in df.columns:
-            logger.info(f"Renaming '{config.RAW_ID_COL}' to '{config.ID_COL}'")
-            df = df.rename(columns={config.RAW_ID_COL: config.ID_COL})
+    if hasattr(config, 'RAW_ID_COLUMN') and hasattr(config, 'ID_COLUMN'):
+        if config.RAW_ID_COLUMN in df.columns:
+            logger.info(f"Renaming '{config.RAW_ID_COLUMN}' to '{config.ID_COLUMN}'")
+            df = df.rename(columns={config.RAW_ID_COLUMN: config.ID_COLUMN})
     return df
 
 def drop_unused_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -69,7 +69,7 @@ def drop_columns_by_threshold(df: pd.DataFrame, report: pd.DataFrame) -> tuple[p
     # Iterate over all columns in the dataframe
     for col in df.columns:
         # * Skip ID and Target from dropping logic
-        if col == config.ID_COL or col == config.TARGET_COLUMN:
+        if col == config.ID_COLUMN or col == config.TARGET_COLUMN:
             continue
 
         # Determine threshold category

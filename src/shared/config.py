@@ -23,8 +23,8 @@ IMPUTED_DATA_FILE = OUTPUT_DIR / "imputed_data.csv"
 
 # --- ID HANDLING ---
 # * Column to be renamed to ID (usually the index from raw CSV)
-RAW_ID_COL = 'Unnamed: 0' 
-ID_COL = 'ID'
+RAW_ID_COLUMN = 'Unnamed: 0' 
+ID_COLUMN = 'ID'
 
 # --- PARAMETERS ---
 MISSING_THRESHOLDS = {
