@@ -25,10 +25,10 @@ def load_imputed_data() -> pd.DataFrame:
     logger.info(f"Loading imputed data from: {config.IMPUTED_DATA_FILE}")
     return pd.read_csv(config.IMPUTED_DATA_FILE)
 
-def save_data(df: pd.DataFrame, path, label="data"):
+def save_data(df: pd.DataFrame, path: str, index_value: str, label="data"):
     """Generic CSV saver."""
     logger.info(f"Saving {label} to: {path}\n")
-    df.to_csv(path)
+    df.to_csv(path, index=index_value)
 
 def missing_value_report(df: pd.DataFrame) -> pd.DataFrame:
     """
