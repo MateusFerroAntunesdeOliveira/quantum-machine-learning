@@ -47,63 +47,6 @@ def plot_missing_distribution(missing_values, bins=20):
     plt.grid(axis='y', alpha=0.75)
     plt.show()
 
-def impute_missing(df):
-    """
-    Advanced imputation for three groups of colunas:
-      - CORE_ATTRIBUTES (all numeric): IterativeImputer with BayesianRidge MICE
-      - SUPPORTING_ATTRIBUTES:
-          - numeric: KNNImputer(n_neighbors=5)
-          - categorical: SimpleImputer(strategy='most_frequent')
-      - Default:
-          - numeric: SimpleImputer(strategy='median')
-          - categorical: SimpleImputer(strategy='most_frequent')
-    """
-    logger.info(f"Imputing missing values with advanced strategies...")
-
-    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-    cat_cols = df.select_dtypes(include=['object','category']).columns.tolist()
-
-    # * Safe intersection - ensure columns exist in df
-    core_num =    [c for c in config.CORE_ATTRIBUTES       if c in num_cols]
-    support_num = [c for c in config.SUPPORTING_ATTRIBUTES if c in num_cols]
-    support_cat = [c for c in config.SUPPORTING_ATTRIBUTES if c in cat_cols]
-
-    # * What's left are default columns
-    defined_cols = set(core_num + support_num + support_cat)
-    default_num = [c for c in num_cols if c not in defined_cols]
-    default_cat = [c for c in cat_cols if c not in defined_cols]
-
-    logger.debug(f"Core Numeric columns ({len(core_num)}): {core_num}")
-    logger.debug(f"Support Numeric columns ({len(support_num)}): {support_num}")
-    logger.debug(f"Support Categorical columns ({len(support_cat)}): {support_cat}")
-    logger.debug(f"Default Numeric columns ({len(default_num)}): {default_num}")
-    logger.debug(f"Default Categorical columns ({len(default_cat)}): {default_cat}\n")
-
-    # * Define imputers for each group
-    core_numerical_imputer = IterativeImputer(estimator=BayesianRidge(), max_iter=10, random_state=42)
-    support_numerical_imputer = KNNImputer(n_neighbors=5)
-    simple_frequent_imputer = SimpleImputer(strategy='most_frequent')
-    simple_median_imputer = SimpleImputer(strategy='median')
-
-    # * Column Transformer with verbose_feature_names_out=False to keep original clean names
-    transformer = ColumnTransformer([
-        ('core_num',  core_numerical_imputer,    core_num),
-        ('sup_num',   support_numerical_imputer, support_num),
-        ('sup_cat',   simple_frequent_imputer,   support_cat),
-        ('num_def',   simple_median_imputer,     default_num),
-        ('cat_def',   simple_frequent_imputer,   default_cat),
-    ], remainder='drop', verbose_feature_names_out=False)
-
-    # * Enable direct pandas output - new in sklearn 1.2+
-    transformer.set_output(transform='pandas')
-    
-    logger.info(f"Fitting and transforming data for imputation...")
-    df_imputed = transformer.fit_transform(df)
-    missing_after = df_imputed.isnull().sum().sum()
-    logger.info(f"Successfully performed imputation. Total missing values after imputation: {missing_after}\n")
-
-    return df_imputed
-
 def compute_pearson_correlation(df):
     """
     Compute Pearson correlation for numeric variables, including target.
