@@ -134,34 +134,15 @@ def compute_pps_matrix(df, target_col=config.TARGET_COLUMN):
     return pps_pivot
 
 def main():
-    raw_df = utils.load_raw_data()
-    df = cleaning.initial_cleanup(raw_df)
-
-    # * Initial missing values report
-    initial_missing_values_report = utils.missing_value_report(df)
-    logger.info(f"Initial missing value report shape: {initial_missing_values_report.shape}")
+    # Initial missing values report
+    # logger.info(f"Initial missing value report shape: {initial_missing_values_report.shape}")
     # plot_missing_distribution(initial_missing_values_report)
 
-    # * Drop columns by threshold
-    df_clean, dropped = cleaning.drop_columns_by_threshold(df=df, report=initial_missing_values_report)
-    logger.info(f"Columns dropped: {len(dropped)}")
-    logger.info(f"Columns remaining after drop: {df_clean.shape[1]}")
-
-    # * Remaining missing values report
-    remaining_missing_values_report = utils.missing_value_report(df_clean)
-    logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}")
+    # Remaining missing values report
+    # logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}")
     # plot_missing_distribution(remaining_missing_values_report)
-    utils.save_data(remaining_missing_values_report, config.DROPPED_COLS_FILE, label="remaining missing values report")
 
-    # * Impute missing values
-    df_imputed = impute_missing(df_clean)
-
-    # * Ensure TARGET_COLUMN (DX_GROUP) is integer after imputation    
-    if config.TARGET_COLUMN in df_imputed.columns:
-        df_imputed[config.TARGET_COLUMN] = df_imputed[config.TARGET_COLUMN].astype(int)  
-
-    df_imputed.to_csv(config.IMPUTED_DATA_FILE, index=False)
-    logger.info(f"Imputed data saved to: {config.IMPUTED_DATA_FILE}")
+    pass
 
     # pearson = compute_pearson_correlation(df_imputed)
     # plt.figure(figsize=(12, 10))
