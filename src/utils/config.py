@@ -3,7 +3,10 @@ from pathlib import Path
 # * Command Center for Project Settings, Paths, Parameters, and Column Definitions
 
 # --- PROJECT STRUCTURE ---
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Base dir = three levels up from this file:
+# quantum-machine-learning/src/utils/config.py. So, BASE_DIR = quantum-machine-learning/
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
 INPUT_DIR = DATA_DIR / "input"
 OUTPUT_DIR = DATA_DIR / "output"
