@@ -13,7 +13,7 @@ def main():
     df = cleaning.initial_cleanup(raw_df)
 
     # * Initial missing values report
-    initial_missing_values_report = utils.missing_value_report(df)
+    initial_missing_values_report = utils.get_missing_value_report(df)
     logger.info(f"Initial missing value report shape: {initial_missing_values_report.shape}")
 
     # * Drop columns by threshold
@@ -22,7 +22,7 @@ def main():
     logger.info(f"Columns remaining after drop: {df_clean.shape[1]}")
 
     # * Remaining missing values report
-    remaining_missing_values_report = utils.missing_value_report(df_clean)
+    remaining_missing_values_report = utils.get_missing_value_report(df_clean)
     logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}")
     # plot_missing_distribution(remaining_missing_values_report)
     utils.save_data(remaining_missing_values_report, config.DROPPED_COLS_FILE, index_value=True, label="remaining missing values report")

@@ -30,7 +30,7 @@ def save_data(df: pd.DataFrame, path: str, index_value: str, label="data"):
     logger.info(f"Saving {label} to: {path}\n")
     df.to_csv(path, index=index_value)
 
-def missing_value_report(df: pd.DataFrame) -> pd.DataFrame:
+def get_missing_value_report(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculates the percentage of missing values for columns that have missing data.
 
