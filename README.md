@@ -8,6 +8,7 @@ A computational pipeline developed as part of a **Master's Thesis in Electrical 
 
 This project applies advanced Machine Learning techniques to phenotypic data from the **ABIDE I (Autism Brain Imaging Data Exchange)** repository to aid in the objective diagnosis of Autism Spectrum Disorder (ASD).
 
+
 ## Project Background & Problem Statement
 
 **Context:**
@@ -20,6 +21,7 @@ Autism Spectrum Disorder (ASD) is a neurodevelopmental condition characterized b
 
 **Objective:**
 To develop a robust, reproducible computational pipeline that classifies ASD vs. Control subjects using phenotypic data. The project aims to identify key **biomarkers** using Explainable AI (XAI) to support clinical decision-making.
+
 
 ## Solution Architecture
 
@@ -39,6 +41,7 @@ The methodology follows a rigorous 6-step scientific pipeline:
 6.  **Explainability (XAI):**
     * Interpretation of model decisions using **SHAP** (SHapley Additive exPlanations).
 
+
 ## Technology Stack
 
 This project is built on a modern Data Science stack and managed by **`uv`**.
@@ -50,23 +53,34 @@ This project is built on a modern Data Science stack and managed by **`uv`**.
 * **Optimization:** `optuna`
 * **Visualization & XAI:** `matplotlib`, `seaborn`, `shap`, `ppscore`
 
+
 ## Project Structure
+
+The project uses a modular architecture to separate configuration, logic, and execution steps.
 
 ```text
 .
 ├── data
-│   ├── input   # Raw phenotypic data (Phenotypic_V1_0b_preprocessed1.csv)
-│   └── output  # Processed datasets (imputed) and results
-├── logs
-│   └── run_asd.log         # Main pipeline log file
+│   ├── input       # Raw phenotypic data (Phenotypic_V1_0b_preprocessed1.csv)
+│   └── output      # Processed datasets and plots
+│   └── logs        # execution logs
 ├── src
-│   ├── run_asd.py          # Main pipeline: Preprocessing & Feature Engineering
-│   ├── train_pipeline.py   # (Planned) Training, Nested CV & Optuna
-│   └── utils.py            # Helper functions
-├── pyproject.toml          # Project dependencies managed by uv
+│   ├── processing  # Core logic modules
+│   │   ├── analysis.py    # Plotting and Correlation logic
+│   │   ├── cleaning.py    # Threshold dropping and initial cleanup
+│   │   └── imputation.py  # MICE and KNN imputation strategies
+│   ├── shared      # Shared resources
+│   │   ├── config.py      # Constants, paths, and column definitions
+│   │   ├── logger.py      # Centralized logging configuration
+│   │   └── utils.py       # IO helper functions
+│   └── steps       # Executable pipeline steps
+│       ├── 01_data_cleaning.py
+│       └── 02_exploratory_analysis.py
+├── pyproject.toml  # Project dependencies managed by uv
 ├── uv.lock
 └── README.md
 ```
+
 
 ## Getting Started
 
@@ -98,11 +112,20 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### Running the Pipeline
 
-To run the main preprocessing and engineering script, simply execute:
+The pipeline is divided into sequential steps. Run them using uv run:
+
+Step 01: Cleaning & Imputation Generates data/output/imputed_data.csv.
 
 ```bash
-uv run src/run_asd.py
+uv run python -m src.steps.01_data_cleaning
 ```
+
+Step 02: Exploratory Data Analysis (EDA) Generates correlation matrices and PPS heatmaps in data/output/.
+
+```bash
+uv run python -m src.steps.02_exploratory
+```
+
 
 ## Roadmap
 
