@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
 INPUT_DIR = DATA_DIR / "input"
 OUTPUT_DIR = DATA_DIR / "output"
-LOG_DIR = BASE_DIR / "logs"
+LOG_DIR = DATA_DIR / "logs"
 
 # Ensure dirs exist
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
