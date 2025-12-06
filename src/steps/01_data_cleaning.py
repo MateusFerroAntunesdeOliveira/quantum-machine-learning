@@ -9,6 +9,8 @@ logger.setup_logging()
 logger = logging.getLogger(__name__)
 
 def main():
+    logger.info("=== STEP 01: STARTING DATA CLEANING AND IMPUTATION ===\n")
+
     raw_df = utils.load_raw_data()
     df = cleaning.initial_cleanup(raw_df)
 
@@ -35,6 +37,8 @@ def main():
         df_imputed[config.TARGET_COLUMN] = df_imputed[config.TARGET_COLUMN].astype(int)  
 
     utils.save_data(df_imputed, config.IMPUTED_DATA_FILE, index_value=False, label="Imputed Dataset")
+
+    logger.info("=== STEP 01: COMPLETED SUCCESSFULLY ===\n")
 
 if __name__ == "__main__":
     main()

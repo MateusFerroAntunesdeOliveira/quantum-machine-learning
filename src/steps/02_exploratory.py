@@ -9,6 +9,8 @@ logger.setup_logging()
 logger = logging.getLogger(__name__)
 
 def main():
+    logger.info("=== STEP 02: STARTING EXPLORATORY DATA ANALYSIS ===\n")
+
     # * Analyze Missing Data (Using Raw and Imputed Data)
     logger.info("--- Part A: Missing Values Analysis ---")
     try:
@@ -40,7 +42,7 @@ def main():
         logger.error("Imputed data not found! Please run 'Step 01' first.\n")
         return
 
-    logger.info("=== STEP 02 COMPLETED SUCCESSFULLY ===\n")
+    logger.info("=== STEP 02: COMPLETED SUCCESSFULLY ===\n")
 
 if __name__ == "__main__":
     main()
