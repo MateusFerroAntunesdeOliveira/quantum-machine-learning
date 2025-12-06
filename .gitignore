@@ -5,7 +5,7 @@
 __pycache__/
 
 # General files
-logs/*.log
+data/logs/*.log
 
 # Distribution / packaging
 build/
