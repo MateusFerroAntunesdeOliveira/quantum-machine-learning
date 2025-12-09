@@ -43,18 +43,47 @@ MISSING_THRESHOLDS = {
 TARGET_COLUMN = 'DX_GROUP'     # Diagnostic Group (1=Autism, 2=Control)
 TARGET_MAPPING = {1: 1, 2: 0}
 
+# Column to indicate percentage of missing values in reports
 PERCENT_MISSING_COLUMN = '% Missing'
+
+# Variance Threshold (remove low variance features). 0.01 means remove features where 99% of values are the same
+VARIANCE_THRESHOLD = 0.01
+
+# Correlation Threshold (for removing multicollinearity)
+CORRELATION_THRESHOLD = 0.95
 
 COLS_TO_DROP_INITIALLY = [
     'Unnamed: 0.1',            # Duplicate index column
     'X',                       # Unknown
     'SUB_ID',                  # ABIDE Subject Identifier
     'subject',                 # Subject Identifier
+    'DSM_IV_TR'                # ! Data Leakage, because its a variable derived from the final diagnosis
+]
+
+# * Used for polynomial feature generation (step 3) - Degree 2 + Interaction and based on PPS analysis
+POLYNOMIAL_ATTRIBUTES = [
+    # 1. ADOS_TOTAL             -> The main observational metric available for all patients.
+    # 2. ADI_R_SOCIAL_TOTAL_A   -> Strong history-based social metric.
+    # 3. SRS_RAW_TOTAL          -> Strong responsiveness scale metric.
+    # 4. AGE_AT_SCAN & FIQ      -> Modulators for interactions.
+
+    'ADOS_TOTAL',
+    'ADI_R_SOCIAL_TOTAL_A',
+    'SRS_RAW_TOTAL',
+    'AGE_AT_SCAN',
+    'FIQ',
+
+    # ! BlindSpot
+    # AGED_AT_SCAN and FIQ have a bad PPS correlation with the target alone.
+    # They can not predict autism well (makes sense to the biological context).
+    # However, a high ADOS score with 5 years is completely different than a high ADOS score at 25 years.
 ]
 
 CORE_ATTRIBUTES = [
     TARGET_COLUMN,             # Diagnostic Group (1=Autism, 2=Control)
-    'DSM_IV_TR',               # Diagnostic Group (0=none, 1=Autism, 3=Aspergers, 4=PDD-NOS)
+
+    # * Removed [2025-12-09] to prevent data leakage:
+    # 'DSM_IV_TR',               # Diagnostic Group (0=none, 1=Autism, 3=Aspergers, 4=PDD-NOS)
 
     # ADI-R: Autism Diagnostic Interview-Revised
     'ADI_R_SOCIAL_TOTAL_A',    # Social (66% missing)
@@ -117,33 +146,3 @@ RARE_ATTRIBUTES = [
     'qc_anat_notes_rater_3','qc_func_notes_rater_3',
     'MEDICATION_NAME','COMORBIDITY','OFF_STIMULANTS_AT_SCAN'
 ]
-
-# * Used for polynomial feature generation (step 3) - Degree 2 + Interaction and based on PPS analysis
-POLYNOMIAL_ATTRIBUTES = [
-    # 1. ADOS_TOTAL             -> The main observational metric available for all patients.
-    # 2. ADI_R_SOCIAL_TOTAL_A   -> Strong history-based social metric.
-    # 3. SRS_RAW_TOTAL          -> Strong responsiveness scale metric.
-    # 4. AGE_AT_SCAN & FIQ      -> Modulators for interactions.
-
-    'ADOS_TOTAL',
-    'ADI_R_SOCIAL_TOTAL_A',
-    'SRS_RAW_TOTAL',
-    'AGE_AT_SCAN',
-    'FIQ',
-
-    # ! BlindSpot
-    # AGED_AT_SCAN and FIQ have a bad PPS correlation with the target alone.
-    # They can not predict autism well (makes sense to the biological context).
-    # However, a high ADOS score with 5 years is completely different than a high ADOS score at 25 years.
-]
-
-# Variance Threshold (remove quasi-constant features)
-# 0.01 means remove features where 99% of values are the same
-VARIANCE_THRESHOLD = 0.01
-
-# Correlation Threshold (for removing multicollinearity)
-CORRELATION_THRESHOLD = 0.95
-
-# Feature Selection
-# Number of features to select if using K-Best (optional, can depend on Wrapper)
-# For Wrapper (RF), we usually let the threshold decide, but we can cap it.
