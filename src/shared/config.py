@@ -21,6 +21,10 @@ RAW_DATA_FILE = INPUT_DIR / "Phenotypic_V1_0b_preprocessed1_from_shawon.csv"
 DROPPED_COLS_FILE = OUTPUT_DIR / "dropped_columns_report.csv"
 IMPUTED_DATA_FILE = OUTPUT_DIR / "imputed_data.csv"
 
+FINAL_TRAIN_DATA_FILE = OUTPUT_DIR / "X_train.csv"
+FINAL_TARGET_DATA_FILE = OUTPUT_DIR / "y_train.csv"
+SELECTED_FEATURES_FILE = OUTPUT_DIR / "selected_features.json"
+
 # --- ID HANDLING ---
 # * Column to be renamed to ID (usually the index from raw CSV)
 RAW_ID_COLUMN = 'Unnamed: 0' 
@@ -35,7 +39,10 @@ MISSING_THRESHOLDS = {
 }
 
 # --- COLUMNS DEFINITIONS ---
+# * Target Mapping (ABIDE: 1=Autism, 2=Control -> ML: 1=Pos, 0=Neg)
 TARGET_COLUMN = 'DX_GROUP'     # Diagnostic Group (1=Autism, 2=Control)
+TARGET_MAPPING = {1: 1, 2: 0}
+
 PERCENT_MISSING_COLUMN = '% Missing'
 
 COLS_TO_DROP_UNUSED = [
@@ -110,3 +117,33 @@ RARE_ATTRIBUTES = [
     'qc_anat_notes_rater_3','qc_func_notes_rater_3',
     'MEDICATION_NAME','COMORBIDITY','OFF_STIMULANTS_AT_SCAN'
 ]
+
+# * Used for polynomial feature generation (step 3) - Degree 2 + Interaction and based on PPS analysis
+POLYNOMIAL_ATTRIBUTES = [
+    # 1. ADOS_TOTAL             -> The main observational metric available for all patients.
+    # 2. ADI_R_SOCIAL_TOTAL_A   -> Strong history-based social metric.
+    # 3. SRS_RAW_TOTAL          -> Strong responsiveness scale metric.
+    # 4. AGE_AT_SCAN & FIQ      -> Modulators for interactions.
+
+    'ADOS_TOTAL',
+    'ADI_R_SOCIAL_TOTAL_A',
+    'SRS_RAW_TOTAL',
+    'AGE_AT_SCAN',
+    'FIQ',
+
+    # ! BlindSpot
+    # AGED_AT_SCAN and FIQ have a bad PPS correlation with the target alone.
+    # They can not predict autism well (makes sense to the biological context).
+    # However, a high ADOS score with 5 years is completely different than a high ADOS score at 25 years.
+]
+
+# Variance Threshold (remove quasi-constant features)
+# 0.01 means remove features where 99% of values are the same
+VARIANCE_THRESHOLD = 0.01
+
+# Correlation Threshold (for removing multicollinearity)
+CORRELATION_THRESHOLD = 0.95
+
+# Feature Selection
+# Number of features to select if using K-Best (optional, can depend on Wrapper)
+# For Wrapper (RF), we usually let the threshold decide, but we can cap it.
