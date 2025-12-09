@@ -1,11 +1,11 @@
 # Diário de Pesquisa - Mestrado UFPR (Mateus Ferro)
 
-Este documento registra insights, decisões estratégicas e achados preliminares obtidos durante o desenvolvimento do pipeline computacional.
+Este documento registra achados importantes e decisões estratégicas obtidos durante o desenvolvimento do projeto.
 
-## [2025-12-09] Análise Preliminar de Feature Engineering (Rodada 1)
+## [2025-12-09] Análise Preliminar de Feature Engineering
 
 **Contexto:** Execução do Step 03 com *Polynomial Features* e *Wrapper Selection*.
-**Nota Importante:** Nesta rodada, a variável `DSM_IV_TR` ainda estava presente, o que causou *Data Leakage*. Contudo, os padrões observados nas demais variáveis revelam dinâmicas fenotípicas importantes.
+**Nota Importante:** Nesta rodada, a variável `DSM_IV_TR` ainda estava presente, o que pode causar futuramente um *Data Leakage*. Contudo, os padrões observados nas demais variáveis revelam dinâmicas fenotípicas importantes.
 
 ### Achados Principais:
 
