@@ -45,7 +45,7 @@ TARGET_MAPPING = {1: 1, 2: 0}
 
 PERCENT_MISSING_COLUMN = '% Missing'
 
-COLS_TO_DROP_UNUSED = [
+COLS_TO_DROP_INITIALLY = [
     'Unnamed: 0.1',            # Duplicate index column
     'X',                       # Unknown
     'SUB_ID',                  # ABIDE Subject Identifier
