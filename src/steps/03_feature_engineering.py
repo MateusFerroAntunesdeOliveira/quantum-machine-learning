@@ -26,10 +26,14 @@ def main():
         logger.error("Imputed data not found! Please run 'Step 01' first.\n")
         return
 
-
     # Feature Generation. Maybe QI * Age...
         # But, we can not apply polynomial features to all of them. If we have 100 columns, we would have 1000+ features.
         # So, apply polynomial features (degree=2) only to CORE ATTRIBUTES (numeric) and some selected SUPPORTING ATTRIBUTES (numeric).
+    df_expanded = features.generate_polynomial_features(df_prepared)
+
+    checkpoint_path = config.OUTPUT_DIR / "data_checkpoint_poly.csv"
+    df_expanded.to_csv(checkpoint_path, index=False)
+    logger.info(f"Saved polynomial features checkpoint to {checkpoint_path}\n")
 
     # Feature Filtering.
         # Variance Thresholding to remove low-variance features.
