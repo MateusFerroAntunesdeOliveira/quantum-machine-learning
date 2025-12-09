@@ -3,7 +3,7 @@
 import logging
 
 from src.shared import config, utils, logger
-# from src.processing import analysis
+from src.processing import features
 
 logger.setup_logging()
 logger = logging.getLogger(__name__)
@@ -15,6 +15,17 @@ def main():
     
     # Preparation.
         # ABIDE uses 1 and 2 for groups. We need to change to 0 and 1 (binary).
+    try:
+        df_imputed = utils.load_imputed_data()
+        logger.info(f"Loaded Imputed Data. Shape: {df_imputed.shape}\n")
+
+        df_prepared = features.prepare_target_variable(df_imputed)
+        logger.info(f"Prepared Target Variable. Shape: {df_prepared.shape}\n")
+
+    except FileNotFoundError:
+        logger.error("Imputed data not found! Please run 'Step 01' first.\n")
+        return
+
 
     # Feature Generation. Maybe QI * Age...
         # But, we can not apply polynomial features to all of them. If we have 100 columns, we would have 1000+ features.
