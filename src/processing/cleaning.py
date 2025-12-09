@@ -48,7 +48,7 @@ def drop_unused_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     Drops columns that are listed in config.COLS_TO_DROP_UNUSED.
     """
-    cols_to_drop = [col for col in config.COLS_TO_DROP_UNUSED if col in df.columns]
+    cols_to_drop = [col for col in config.COLS_TO_DROP_INITIALLY if col in df.columns]
     if cols_to_drop:
         logger.info(f"Dropping {len(cols_to_drop)} unused columns: {cols_to_drop}")
         df = df.drop(columns=cols_to_drop)
