@@ -18,12 +18,12 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # --- FILE PATHS ---
 LOG_FILE = LOG_DIR / "execution.log"
 RAW_DATA_FILE = INPUT_DIR / "Phenotypic_V1_0b_preprocessed1_from_shawon.csv"
-DROPPED_COLS_FILE = OUTPUT_DIR / "dropped_columns_report.csv"
-IMPUTED_DATA_FILE = OUTPUT_DIR / "imputed_data.csv"
+DROPPED_COLS_FILE = OUTPUT_DIR / "01_dropped_columns_report.csv"
+IMPUTED_DATA_FILE = OUTPUT_DIR / "01_imputed_data.csv"
 
-FINAL_TRAIN_DATA_FILE = OUTPUT_DIR / "X_train.csv"
-FINAL_TARGET_DATA_FILE = OUTPUT_DIR / "y_train.csv"
-SELECTED_FEATURES_FILE = OUTPUT_DIR / "selected_features.json"
+FINAL_TRAIN_DATA_FILE = OUTPUT_DIR / "03_X_train.csv"
+FINAL_TARGET_DATA_FILE = OUTPUT_DIR / "03_y_train.csv"
+SELECTED_FEATURES_FILE = OUTPUT_DIR / "03_selected_features.json"
 
 # --- ID HANDLING ---
 # * Column to be renamed to ID (usually the index from raw CSV)
