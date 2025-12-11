@@ -24,3 +24,8 @@ Este documento registra achados importantes e decisões estratégicas obtidos du
     * **Interpretação:** Para classificação neste dataset específico, a qualidade da imagem ou o QI sozinho não discriminam TEA de Controle com a mesma eficácia que os escores comportamentais. O QI serve mais como modulador (em interações) do que como preditor direto.
 
 ---
+
+## [2025-12-10] Estudo sobre Modelagem (Step 4) e Otimização (Step 5)
+
+Como decidimos separar a Otimização (Step 5) da Modelagem (Step 4), neste passo implementaremos uma Validação Cruzada Estratificada (Stratified K-Fold). Isso funcionará como o "Loop Externo" do NCV. No Step 5, injetaremos o Optuna dentro desse processo para completar o NCV.
+
