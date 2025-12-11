@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel, VarianceThreshold
 from sklearn.preprocessing import PolynomialFeatures
 
-from src.shared import config
+from src.shared import config, utils
 
 # Get logger instance for this module
 logger = logging.getLogger(__name__)
@@ -197,5 +197,9 @@ def apply_feature_selection(X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
         logger.info(f"Saved selected features list to: {config.SELECTED_FEATURES_FILE}")
     except Exception as e:
         logger.error(f"Failed to save feature list json: {e}")
-    
+
+    # Save X and y for modeling
+    utils.save_data(X_selected, config.FINAL_TRAIN_DATA_FILE, index_value=False, label="Final Featured Data")
+    utils.save_data(y.to_frame(), config.FINAL_TARGET_DATA_FILE, index_value=False, label="Final Target Data")
+
     return X_selected
