@@ -25,9 +25,23 @@ def load_imputed_data() -> pd.DataFrame:
     logger.info(f"Loading imputed data from: {config.IMPUTED_DATA_FILE}")
     return pd.read_csv(config.IMPUTED_DATA_FILE)
 
+def load_final_data() -> tuple[pd.DataFrame, pd.Series]:
+    """Loads the final (X_train, y_train) dataset for modeling."""
+    if not config.FINAL_TRAIN_DATA_FILE.exists():
+        raise FileNotFoundError(f"Featured file not found. Run step 03 first.")
+
+    if not config.FINAL_TARGET_DATA_FILE.exists():
+        raise FileNotFoundError(f"Target file not found. Run step 03 first.")
+
+    logger.info(f"Loading final training (X) and target (y) data")
+    X = pd.read_csv(config.FINAL_TRAIN_DATA_FILE)
+    y = pd.read_csv(config.FINAL_TARGET_DATA_FILE).squeeze()  # Convert to Series
+
+    return X, y
+
 def save_data(df: pd.DataFrame, path: str, index_value: str, label="data"):
     """Generic CSV saver."""
-    logger.info(f"Saving {label} to: {path}\n")
+    logger.info(f"Saving {label} to: {path}")
     df.to_csv(path, index=index_value)
 
 def get_missing_value_report(df: pd.DataFrame) -> pd.DataFrame:
