@@ -4,15 +4,24 @@ import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 warnings.filterwarnings("ignore", category=FutureWarning, module="sklearn")
+warnings.filterwarnings("ignore", category=UserWarning, module="xgboost")
+warnings.filterwarnings("ignore", category=UserWarning, module="lightgbm")
 
 import logging
 
 import pandas as pd
 
-from sklearn.discriminant_analysis import StandardScaler
+# Algorithms
 from sklearn.dummy import DummyClassifier
-from sklearn.pipeline import make_pipeline
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+
+# Pipeline & Preprocessing
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 
 from src.shared import config, utils, logger
 from src.processing import modeling
@@ -39,10 +48,12 @@ def main():
     # We use make_pipeline to include Scaling automatically inside CV folds
     # Probably=True is required for SVC to compute probabilities for ROC_AUC
     models_to_test = [
+        # Baseline
         (
             "Baseline (Dummy)", 
             DummyClassifier(strategy="most_frequent")
         ),
+        # Distance-Based (requires scaling)
         (
             "SVM (Linear)", 
             make_pipeline(StandardScaler(), SVC(kernel='linear', probability=True, random_state=42))
@@ -50,7 +61,29 @@ def main():
         (
             "SVM (RBF)", 
             make_pipeline(StandardScaler(), SVC(kernel='rbf', probability=True, random_state=42))
-        )
+        ),
+        (
+            "KNN (k=5)", 
+            make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=5))
+        ),
+        (
+            "KNN (k=10)", 
+            make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=10))
+        ),
+        # Ensemble / Tree-Based (no scaling needed)
+        (
+            "Random Forest", 
+            RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+        ),
+        (
+            "XGBoost", 
+            XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42, n_jobs=-1)
+        ),
+        (
+            "LightGBM", 
+            LGBMClassifier(random_state=42, n_jobs=-1, verbose=-1)
+        ),
+        
     ]
     logger.info(f"Initialize {len(models_to_test)} models for benchmarking...\n")
 
