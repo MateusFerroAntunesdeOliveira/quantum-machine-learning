@@ -29,3 +29,16 @@ Este documento registra achados importantes e decisões estratégicas obtidos du
 
 Como decidimos separar a Otimização (Step 5) da Modelagem (Step 4), neste passo implementaremos uma Validação Cruzada Estratificada (Stratified K-Fold). Isso funcionará como o "Loop Externo" do NCV. No Step 5, injetaremos o Optuna dentro desse processo para completar o NCV.
 
+---
+
+## [2026-01-02] Análise de Desempenho (Baseline vs SVM)
+
+**Contexto:** Execução do Step 04 (Modelagem) com SVM Linear e RBF.
+**Resultados:** F1-Score ~98.8% e AUC ~0.997.
+
+### Interpretação Crítica dos Resultados:
+1.  **Alta Performance Esperada:** A precisão quase perfeita deve-se à presença das variáveis `ADOS` e `ADI-R` no conjunto de treino. Como estes instrumentos constituem a base do critério diagnóstico (Ground Truth), o modelo aprendeu a "regra de corte" clínica.
+2.  **Linearidade:** A proximidade entre o desempenho do SVM Linear e RBF indica que a fronteira de decisão é, em grande parte, linear.
+3.  **Validação do Pipeline:** O Baseline (Dummy) obteve F1=0.0, confirmando que a performance do SVM é real e discriminativa, e não fruto de artefatos de classe majoritária.
+
+**Decisão Estratégica:** Manteremos o foco em "Replicabilidade Computacional do Diagnóstico Clínico" e "Biomarcadores Fenotípicos". Não tentaremos remover ADOS/ADI-R, pois isso resultaria em perda total de poder preditivo (visto que MRI/QI foram descartados no Step 3).
