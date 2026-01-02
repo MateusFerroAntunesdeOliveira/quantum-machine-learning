@@ -73,7 +73,7 @@ def train_and_evaluate(model_name: str, model: BaseEstimator, X: pd.DataFrame, y
             if metric in ['f1', 'roc_auc']:
                 logger.info(f"{metric.upper()}: {mean_score:.4f} (+/- {std_score:.4f})")
 
-    logger.info(f"Completed evaluation for {model_name}.\n")
+    logger.info(f"Completed training and evaluation for {model_name}.\n")
     return results_summary
 
 def get_scoring_metrics() -> dict:

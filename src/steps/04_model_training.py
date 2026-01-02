@@ -52,18 +52,29 @@ def main():
             make_pipeline(StandardScaler(), SVC(kernel='rbf', probability=True, random_state=42))
         )
     ]
-
     logger.info(f"Initialize {len(models_to_test)} models for benchmarking...\n")
-    all_results = list()
 
+    all_results = list()
     for name, model in models_to_test:
         # Calls the abstraction layer in modeling.py
         # This handles the Cross-Validate logic, metrics calculation, and logging
         model_results = modeling.train_and_evaluate(model_name=name, model=model, X=X, y=y, k_folds=10)
 
+        if model_results:
+            all_results.append(model_results)
 
+    if all_results:
+        results_df = pd.DataFrame(all_results)
+        results_df = results_df.sort_values(by='Mean_f1', ascending=False)
 
+        utils.save_data(results_df, config.MODEL_COMPARISON_RESULTS_FILE, index_value=True, label="Model Comparison Results")
+        logger.info("Final Benchmarking Summary (sorted by Mean F1 Score):")
 
+        summary_cols = ['Model', 'Mean_f1', 'Mean_roc_auc', 'Mean_accuracy', 'Mean_recall']
+        summary_df = results_df[summary_cols].copy()
+
+        for index, row in summary_df.iterrows():
+            logger.info(f"{row['Model']:<20} | F1: {row['Mean_f1']:.4f} | AUC: {row['Mean_roc_auc']:.4f}")
 
     logger.info("=== STEP 04: COMPLETED SUCCESSFULLY ===\n")
 
