@@ -31,14 +31,26 @@ Como decidimos separar a Otimização (Step 5) da Modelagem (Step 4), neste pass
 
 ---
 
-## [2026-01-02] Análise de Desempenho (Baseline vs SVM)
+## [2026-01-02] Benchmarking "Big Six" (Step 04)
 
-**Contexto:** Execução do Step 04 (Modelagem) com SVM Linear e RBF.
-**Resultados:** F1-Score ~98.8% e AUC ~0.997.
+**Contexto:** Comparação sistemática de 7 algoritmos (+ Baseline) usando Nested CV (k=10).
+**Features:** 14 variáveis selecionadas (baseadas em ADOS/ADI-R).
 
-### Interpretação Crítica dos Resultados:
-1.  **Alta Performance Esperada:** A precisão quase perfeita deve-se à presença das variáveis `ADOS` e `ADI-R` no conjunto de treino. Como estes instrumentos constituem a base do critério diagnóstico (Ground Truth), o modelo aprendeu a "regra de corte" clínica.
-2.  **Linearidade:** A proximidade entre o desempenho do SVM Linear e RBF indica que a fronteira de decisão é, em grande parte, linear.
-3.  **Validação do Pipeline:** O Baseline (Dummy) obteve F1=0.0, confirmando que a performance do SVM é real e discriminativa, e não fruto de artefatos de classe majoritária.
+### Resultados Principais:
+1.  **Liderança do Gradient Boosting:**
+    * **LightGBM:** F1 = 99.44% (AUC = 0.9996)
+    * **XGBoost:** F1 = 99.35% (AUC = 0.9991)
+    * **Interpretação:** A natureza hierárquica e baseada em regras de corte (thresholds) dos algoritmos de árvore se alinha perfeitamente com a lógica de pontuação dos testes clínicos (ex: ADOS cutoff).
 
-**Decisão Estratégica:** Manteremos o foco em "Replicabilidade Computacional do Diagnóstico Clínico" e "Biomarcadores Fenotípicos". Não tentaremos remover ADOS/ADI-R, pois isso resultaria em perda total de poder preditivo (visto que MRI/QI foram descartados no Step 3).
+2.  **KNN superou SVM:**
+    * O KNN (k=5) obteve F1=99.07%, superando o SVM RBF (98.79%). Isso indica que a topologia dos dados favorece abordagens baseadas em densidade local/vizinhança em vez de margens globais.
+
+3.  **Linearidade Imperfeita:**
+    * O SVM Linear teve o menor desempenho (98.50%) entre os modelos inteligentes, confirmando que a fronteira de decisão possui não-linearidades sutis que justificam o uso de modelos mais complexos.
+
+### Decisão Estratégica para Otimização (Step 5):
+Selecionamos o **LightGBM** e o **XGBoost** para a etapa de Otimização de Hiperparâmetros (Optuna).
+* **Motivo:** Maior performance bruta.
+* **XAI:** Ambos são compatíveis com TreeSHAP, permitindo explicabilidade detalhada no Step 6.
+* **Plano:** Faremos um ajuste fino para tentar extrair o "último milésimo" de performance e garantir estabilidade, embora o ganho marginal esperado seja baixo dado o teto de 99.4%.
+
