@@ -25,6 +25,8 @@ FINAL_TRAIN_DATA_FILE = OUTPUT_DIR / "03_X_train.csv"
 FINAL_TARGET_DATA_FILE = OUTPUT_DIR / "03_y_train.csv"
 SELECTED_FEATURES_FILE = OUTPUT_DIR / "03_selected_features.json"
 
+MODEL_COMPARISON_RESULTS_FILE = OUTPUT_DIR / "04_model_comparison_results.csv"
+
 # --- ID HANDLING ---
 # * Column to be renamed to ID (usually the index from raw CSV)
 RAW_ID_COLUMN = 'Unnamed: 0' 
