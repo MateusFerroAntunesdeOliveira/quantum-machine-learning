@@ -54,3 +54,16 @@ Selecionamos o **LightGBM** e o **XGBoost** para a etapa de Otimização de Hipe
 * **XAI:** Ambos são compatíveis com TreeSHAP, permitindo explicabilidade detalhada no Step 6.
 * **Plano:** Faremos um ajuste fino para tentar extrair o "último milésimo" de performance e garantir estabilidade, embora o ganho marginal esperado seja baixo dado o teto de 99.4%.
 
+---
+
+## [2026-01-03] Otimização de Hiperparâmetros (Optuna)
+
+**Contexto:** Refinamento dos modelos LightGBM e XGBoost (Top 2 do Step 4).
+**Resultado:** Otimização concluída com sucesso.
+
+### O Campeão: LightGBM
+* **F1-Score Final:** 99.54% (+0.10% sobre o baseline).
+* **Configuração Vencedora:** Árvores rasas (`max_depth=4`) com regularização balanceada (`reg_alpha=0.42`, `reg_lambda=0.61`).
+* **Significado:** O modelo atingiu o teto de performance possível com este conjunto de features, priorizando generalização (árvores curtas) em vez de memorização.
+
+**Próximo Passo:** Utilizar este modelo configurado para gerar explicações globais e locais via SHAP (Step 6).
