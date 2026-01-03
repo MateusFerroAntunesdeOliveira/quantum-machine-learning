@@ -27,6 +27,9 @@ SELECTED_FEATURES_FILE = OUTPUT_DIR / "03_selected_features.json"
 
 MODEL_COMPARISON_RESULTS_FILE = OUTPUT_DIR / "04_model_comparison_results.csv"
 
+# Will be concatenated with model name, e.g., "05_best_hyperparameters_LightGBM.json"
+BEST_PARAMS_FILE = OUTPUT_DIR / "05_best_hyperparameters"
+
 # --- ID HANDLING ---
 # * Column to be renamed to ID (usually the index from raw CSV)
 RAW_ID_COLUMN = 'Unnamed: 0' 
