@@ -62,20 +62,26 @@ The project uses a modular architecture to separate configuration, logic, and ex
 .
 ├── data
 │   ├── input       # Raw phenotypic data (Phenotypic_V1_0b_preprocessed1.csv)
-│   └── output      # Processed datasets and plots
-│   └── logs        # execution logs
+│   ├── logs        # execution logs
+│   └── output      # Processed datasets and plots - for thesis
 ├── src
-│   ├── processing  # Core logic modules
-│   │   ├── analysis.py    # Plotting and Correlation logic
-│   │   ├── cleaning.py    # Threshold dropping and initial cleanup
-│   │   └── imputation.py  # MICE and KNN imputation strategies
-│   ├── shared      # Shared resources
-│   │   ├── config.py      # Constants, paths, and column definitions
-│   │   ├── logger.py      # Centralized logging configuration
-│   │   └── utils.py       # IO helper functions
+│   ├── processing
+│   │   ├── analysis.py         # Plotting and Correlation logic
+│   │   ├── cleaning.py         # Threshold dropping and initial cleanup
+│   │   ├── features.py         # Feature generation, filtering and selection
+│   │   ├── imputation.py       # MICE and KNN imputation strategies
+│   │   ├── modeling.py         # Model training and evaluation
+│   │   └── tuning.py           # Hyperparameter tuning with Optuna
+│   ├── shared
+│   │   ├── config.py           # Constants, paths, and column definitions
+│   │   ├── logger.py           # Centralized logging configuration
+│   │   └── utils.py            # IO helper functions
 │   └── steps       # Executable pipeline steps
 │       ├── 01_data_cleaning.py
-│       └── 02_exploratory_analysis.py
+│       ├── 02_exploratory_analysis.py
+│       ├── 03_feature_engineering.py
+│       ├── 04_model_training.py
+│       └── 05_optimization.py
 ├── pyproject.toml  # Project dependencies managed by uv
 ├── uv.lock
 └── README.md
@@ -112,27 +118,23 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### Running the Pipeline
 
-The pipeline is divided into sequential steps. Run them using uv run:
+The pipeline is divided into sequential steps (1 to 6). Run them using uv run:
 
-Step 01: Cleaning & Imputation Generates data/output/imputed_data.csv.
+For example, for `Step 01` - Cleaning & Imputation generates `data/output/01_imputed_data.csv`.
 
 ```bash
 uv run python -m src.steps.01_data_cleaning
 ```
 
-Step 02: Exploratory Data Analysis (EDA) Generates correlation matrices and PPS heatmaps in data/output/.
-
-```bash
-uv run python -m src.steps.02_exploratory
-```
+And repeat for each step up to Step 06.
 
 
 ## Roadmap
 
 * [X] **Phase 1:** Data Acquisition & Exploratory Analysis.
 * [X] **Phase 2:** Advanced Preprocessing (MICE Imputation pipeline).
-* [ ] **Phase 3:** Feature Selection & Engineering (Current Focus).
-* [ ] **Phase 4:** Model Training with Nested Cross-Validation.
+* [X] **Phase 3:** Feature Selection & Engineering (Current Focus).
+* [X] **Phase 4:** Model Training with Nested Cross-Validation.
 * [ ] **Phase 5:** Hyperparameter Optimization (Optuna).
 * [ ] **Phase 6:** Explainability Analysis (SHAP) & Final Reporting.
 
@@ -145,4 +147,4 @@ uv run python -m src.steps.02_exploratory
 
 **Advisor:** Prof. Dr. Leandro dos Santos Coelho
 
-All rights reserved © 2025
+All rights reserved © 2026
