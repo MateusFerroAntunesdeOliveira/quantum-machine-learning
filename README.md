@@ -135,7 +135,7 @@ And repeat for each step up to Step 06.
 * [X] **Phase 2:** Advanced Preprocessing (MICE Imputation pipeline).
 * [X] **Phase 3:** Feature Selection & Engineering (Current Focus).
 * [X] **Phase 4:** Model Training with Nested Cross-Validation.
-* [ ] **Phase 5:** Hyperparameter Optimization (Optuna).
+* [X] **Phase 5:** Hyperparameter Optimization (Optuna).
 * [ ] **Phase 6:** Explainability Analysis (SHAP) & Final Reporting.
 
 <br>
