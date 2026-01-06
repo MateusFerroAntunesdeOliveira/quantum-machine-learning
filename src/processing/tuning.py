@@ -56,7 +56,7 @@ def run_optimization(model_name: str, X: pd.DataFrame, y: pd.Series, n_trials: i
     logger.info(f"Saving best hyperparameters to {output_file}...")
 
     with open(output_file, 'w') as f:
-        json.dump(best_params, f, indent=4)
+        json.dump({**best_params, "best_value": best_value}, f, indent=4)
 
     logger.info("Hyperparameter optimization process finished.\n")
 
