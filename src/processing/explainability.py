@@ -1,4 +1,4 @@
-# Used for ...
+# Used to generate SHAP explainability plots for the LightGBM model
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="shap")
@@ -57,9 +57,9 @@ def perform_shap_analysis(model: LGBMClassifier, X: pd.DataFrame):
 
     # --- PLOT 1: SUMMARY PLOT (Beeswarm) ---
     logger.info("Generating SHAP summary plot (Beeswarm)...")
-    plt.figure(figsize=(12, 10))
+    plt.figure(figsize=(12, 8))
     shap.summary_plot(shap_values_target, X, show=False, cmap='coolwarm')
-    plt.title("SHAP Summary Plot (Global Interpretability)", fontsize=16)
+    plt.title("SHAP Summary Plot (Global Interpretability)")
     plt.tight_layout()
     out_path = config.OUTPUT_DIR / "06_shap_summary_beeswarm.png"
     plt.savefig(out_path)
@@ -68,9 +68,9 @@ def perform_shap_analysis(model: LGBMClassifier, X: pd.DataFrame):
 
     # --- PLOT 2: BAR PLOT (Importance) ---
     logger.info("Generating SHAP mean importance bar plot...")
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 8))
     shap.summary_plot(shap_values_target, X, plot_type="bar", show=False, color='#4A90E2')
-    plt.title("Mean Absolute SHAP Values (Feature Importance)", fontsize=16)
+    plt.title("Mean Absolute SHAP Values (Feature Importance)")
     plt.tight_layout()
     out_path = config.OUTPUT_DIR / "06_shap_mean_importance_bar.png"
     plt.savefig(out_path)
@@ -83,10 +83,10 @@ def perform_shap_analysis(model: LGBMClassifier, X: pd.DataFrame):
     top_features = X.columns[top_indices]
     logger.info(f"Generating Dependence Plots for top features: {top_features.tolist()}...")
     for feat in top_features:
-        plt.figure(figsize=(10, 7))
+        plt.figure(figsize=(12, 8))
         # dependence_plot usually handles plotting itself, but we can capture it
         shap.dependence_plot(feat, shap_values_target, X, show=False, cmap='coolwarm', interaction_index='auto')
-        plt.title(f"SHAP Dependence: {feat}", fontsize=16)
+        plt.title(f"SHAP Dependence: {feat}")
         plt.tight_layout()
         safe_feat_name = feat.replace("^", "_pow_").replace(" ", "_x_")
         out_path_dep = config.OUTPUT_DIR / f"06_shap_dependence_{safe_feat_name}.png"
