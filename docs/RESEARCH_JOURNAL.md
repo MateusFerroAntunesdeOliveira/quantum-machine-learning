@@ -67,3 +67,44 @@ Selecionamos o **LightGBM** e o **XGBoost** para a etapa de Otimização de Hipe
 * **Significado:** O modelo atingiu o teto de performance possível com este conjunto de features, priorizando generalização (árvores curtas) em vez de memorização.
 
 **Próximo Passo:** Utilizar este modelo configurado para gerar explicações globais e locais via SHAP (Step 6).
+
+---
+
+## [2026-01-06] Análise de Explicabilidade (SHAP) - Parte 1
+
+**Contexto:** Interpretação dos gráficos *Beeswarm* e *Bar Plot* do modelo LightGBM.
+
+### Achados Críticos:
+
+1.  **Validação da Hipótese Polinomial:**
+    * A feature mais impactante do modelo é `SRS_RAW_TOTAL^2` (SRS ao quadrado), superando o próprio `ADOS_TOTAL`.
+    * **Significado:** A relação entre responsividade social e diagnóstico é exponencial. Valores extremos de SRS pesam desproporcionalmente mais para a classificação de TEA do que valores medianos. O uso de features polinomiais foi determinante para capturar essa nuance.
+
+2.  **Viés de Processo (Reliability):**
+    * A variável `ADOS_RSRCH_RELIABLE` aparece como 3ª mais importante. Valores altos (confiável) predizem autismo.
+    * **Interpretação:** Provável artefato do dataset ABIDE, onde casos positivos passaram por validação mais rigorosa que controles. Isso deve ser discutido como limitação de "Data Quality" na dissertação, e não como achado fenotípico.
+
+3.  **Confirmação do Padrão-Ouro:**
+    * `ADOS_TOTAL` apresenta uma separação linear clara (Azul/Esquerda vs Vermelho/Direita), atuando como o "corte" principal de decisão.
+
+4.  **Assinatura de Alto Funcionamento:**
+    * `ADOS_MODULE` (Módulos 3/4 para fluentes) tem correlação positiva com o diagnóstico no modelo. Isso sugere que o classificador é particularmente sensível ao fenótipo de autismo com fluência verbal (antigo Asperger/Alto Funcionamento) presente no ABIDE.
+
+---
+
+## [2026-01-06] Análise de Explicabilidade (SHAP) - Parte 2 (Dependence Plots)
+
+**Contexto:** Análise detalhada das interações não-lineares.
+
+### Achados Fenomenológicos:
+
+1.  **O Efeito de Saturação do SRS (`SRS_RAW_TOTAL^2`):**
+    * A curva de dependência revela um comportamento sigmoide. Scores baixos protegem, scores médios (50-70) causam um salto abrupto no risco, e scores altos (>100) atingem um platô.
+    * Isso confirma que a decisão de usar polinômios quadráticos foi vital para capturar esse comportamento de "gatilho" que modelos lineares falhariam em modelar.
+
+2.  **A Zona Limítrofe do ADOS (Interação com ADI-R):**
+    * Identificou-se um "cutoff" claro ao redor do score 11 no `ADOS_TOTAL`.
+    * **Desempate Inteligente:** Em scores limítrofes (ex: 11), observa-se uma dispersão vertical explicada pela interação com o `ADI-R`. O modelo utiliza o histórico social do paciente (ADI-R) para decidir a classificação quando a observação direta (ADOS) está na zona cinzenta, mimetizando o raciocínio clínico multi-instrumental.
+
+3.  **Auditoria de Viés (`ADOS_RSRCH_RELIABLE`):**
+    * Confirmou-se que a flag de confiabilidade atua como um proxy forte para o diagnóstico, indicando um viés procedimental na coleta do ABIDE (pacientes TEA são mais auditados que controles). Este achado será reportado como limitação do dataset.
