@@ -44,6 +44,11 @@ def save_data(df: pd.DataFrame, path: str, index_value: str, label="data"):
     logger.info(f"Saving {label} to: {path}")
     df.to_csv(path, index=index_value)
 
+def file_exists(path: str) -> bool:
+    """Checks if a file exists at the given path."""
+    from pathlib import Path
+    return Path(path).exists()
+
 def get_missing_value_report(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculates the percentage of missing values for columns that have missing data.
