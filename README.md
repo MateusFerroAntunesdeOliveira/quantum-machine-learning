@@ -68,6 +68,7 @@ The project uses a modular architecture to separate configuration, logic, and ex
 │   ├── processing
 │   │   ├── analysis.py         # Plotting and Correlation logic
 │   │   ├── cleaning.py         # Threshold dropping and initial cleanup
+│   │   ├── explainability.py   # SHAP analysis and plots
 │   │   ├── features.py         # Feature generation, filtering and selection
 │   │   ├── imputation.py       # MICE and KNN imputation strategies
 │   │   ├── modeling.py         # Model training and evaluation
@@ -81,7 +82,8 @@ The project uses a modular architecture to separate configuration, logic, and ex
 │       ├── 02_exploratory_analysis.py
 │       ├── 03_feature_engineering.py
 │       ├── 04_model_training.py
-│       └── 05_optimization.py
+│       ├── 05_optimization.py
+│       └── 06_explainability.py
 ├── pyproject.toml  # Project dependencies managed by uv
 ├── uv.lock
 └── README.md
@@ -136,7 +138,7 @@ And repeat for each step up to Step 06.
 * [X] **Phase 3:** Feature Selection & Engineering (Current Focus).
 * [X] **Phase 4:** Model Training with Nested Cross-Validation.
 * [X] **Phase 5:** Hyperparameter Optimization (Optuna).
-* [ ] **Phase 6:** Explainability Analysis (SHAP) & Final Reporting.
+* [X] **Phase 6:** Explainability Analysis (SHAP) & Final Reporting.
 
 <br>
 
