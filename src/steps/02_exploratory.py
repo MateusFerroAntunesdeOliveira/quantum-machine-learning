@@ -38,10 +38,10 @@ def main():
         logger.info(f"Loaded Imputed Data. Shape: {df_imputed.shape}\n")
 
         # Pearson & Spearman (Linear & Monotonic Relationships)
-        analysis.compute_and_plot_correlations(df_imputed)
+        analysis.compute_correlations(df_imputed)
 
         # PPS (Predictive Power Score) for Non-Linear Relationships
-        analysis.compute_pps_matrix(df_imputed)
+        analysis.compute_pps(df_imputed)
 
     except FileNotFoundError:
         logger.error("Imputed data not found! Please run 'Step 01' first.\n")
