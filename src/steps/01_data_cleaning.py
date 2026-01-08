@@ -26,7 +26,6 @@ def main():
     # * Remaining missing values report
     remaining_missing_values_report = utils.get_missing_value_report(df_clean)
     logger.info(f"Remaining missing value report shape: {remaining_missing_values_report.shape}")
-    # plot_missing_distribution(remaining_missing_values_report)
     utils.save_data(remaining_missing_values_report, config.DROPPED_COLS_FILE, index_value=True, label="remaining missing values report")
 
     # * Impute missing values

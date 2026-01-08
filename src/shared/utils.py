@@ -43,7 +43,7 @@ def load_final_data() -> tuple[pd.DataFrame, pd.Series]:
 
 def save_data(df: pd.DataFrame, path: str, index_value: str, label="data"):
     """Generic CSV saver."""
-    logger.info(f"Saving {label} to: {path}")
+    logger.info(f"Saving {label} to: {path}\n")
     df.to_csv(path, index=index_value)
 
 def file_exists(path: str) -> bool:

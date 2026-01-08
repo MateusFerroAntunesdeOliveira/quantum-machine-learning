@@ -102,8 +102,8 @@ def drop_columns_by_threshold(df: pd.DataFrame, report: pd.DataFrame) -> tuple[p
     # Perform the drop
     if columns_to_remove:
         df_clean = df.drop(columns=columns_to_remove)
-        logger.info(f"Successfully analyzed missing values. Dropping {len(columns_to_remove)} columns.\n")
+        logger.info(f"Successfully analyzed missing values. Dropping {len(columns_to_remove)} columns.")
         return df_clean, columns_to_remove
 
-    logger.info("Successfully analyzed missing values. No columns to drop.\n")
+    logger.info("Successfully analyzed missing values. No columns to drop.")
     return df, []

@@ -45,12 +45,12 @@ def run_advanced_imputation(df: pd.DataFrame) -> pd.DataFrame:
     default_num = [c for c in num_cols if c not in covered_cols]
     default_cat = [c for c in cat_cols if c not in covered_cols]
 
-    logger.info(f"  Strategy Mapping:")
-    logger.info(f"  - MICE (Core Num): {len(core_num)} cols")
-    logger.info(f"  - KNN (Support Num): {len(support_num)} cols")
-    logger.info(f"  - SimpleImputer Most Frequent (Support Cat): {len(support_cat)} cols")
-    logger.info(f"  - SimpleImputer Median (Default Num): {len(default_num)} cols")
-    logger.info(f"  - SimpleImputer Most Frequent (Default Cat): {len(default_cat)} cols")
+    logger.info(f"Strategy Mapping:")
+    logger.info(f" - MICE (Core Num): {len(core_num)} cols")
+    logger.info(f" - KNN (Support Num): {len(support_num)} cols")
+    logger.info(f" - SimpleImputer Most Frequent (Support Cat): {len(support_cat)} cols")
+    logger.info(f" - SimpleImputer Median (Default Num): {len(default_num)} cols")
+    logger.info(f" - SimpleImputer Most Frequent (Default Cat): {len(default_cat)} cols")
 
     # * Define transformers for ColumnTransformer pipeline
     core_numerical_imputer = IterativeImputer(estimator=BayesianRidge(), max_iter=10, random_state=42)
@@ -87,5 +87,5 @@ def run_advanced_imputation(df: pd.DataFrame) -> pd.DataFrame:
 
     missing_after = df_imputed.isnull().sum().sum()
     logger.info(f"Imputation complete. Total missing values after imputation: {missing_after}")
-    logger.info(f"Advanced Imputation Strategy finished successfully.\n")
+    logger.info(f"Advanced Imputation Strategy finished successfully.")
     return df_imputed
