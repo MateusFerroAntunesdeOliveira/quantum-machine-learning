@@ -2,7 +2,9 @@
 
 import logging
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 from . import config
 from . import logger
@@ -63,3 +65,12 @@ def get_missing_value_report(df: pd.DataFrame) -> pd.DataFrame:
     missing_value.drop("Total Missing", axis=1, inplace=True)
 
     return missing_value
+
+def apply_plot_style():
+    """
+    Applies the standardized plot style defined in config.
+    Should be called before generating any figure.
+    """
+    sns.set_style("whitegrid")
+    plt.rcParams.update(config.VIZ_PARAMS)
+    logger.info("Applied standardized plot style from config.")
