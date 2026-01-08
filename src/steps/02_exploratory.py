@@ -17,17 +17,16 @@ def main():
         # 1. Plot Raw Data Missingness (Should show high bars)
         df_raw = utils.load_raw_data()
         report = utils.get_missing_value_report(df_raw)
-        analysis.plot_missing_distribution(report, fileName="02_missing_values_distribution_raw.png")
+        analysis.plot_missing_distribution(report, fileName=config.MISSING_VALUES_DISTRIBUTION_RAW_PLOT)
 
-        # Additional Plot for Class Balance and Stratified Missingness (Critical Features)
-        critical_features = ['ADOS_TOTAL', 'ADI_R_SOCIAL_TOTAL_A', 'SRS_RAW_TOTAL', 'ADOS_MODULE']
+        # 1.1 Additional Plot for 'Class Balance' and 'Stratified Missingness' (Critical Features)
         analysis.plot_class_balance(df_raw, target_col=config.TARGET_COLUMN)
-        analysis.plot_stratified_missingness(df_raw, target_col=config.TARGET_COLUMN, features_to_check=critical_features)
+        analysis.plot_stratified_missingness(df_raw, target_col=config.TARGET_COLUMN, features_to_check=config.CRITICAL_FEATURES)
 
         # 2. Plot Imputed Data Missingness (Should be empty/zero)
         df_imputed = utils.load_imputed_data()
         reportImputed = utils.get_missing_value_report(df_imputed)
-        analysis.plot_missing_distribution(reportImputed, fileName="02_missing_values_distribution_imputed.png")
+        analysis.plot_missing_distribution(reportImputed, fileName=config.MISSING_VALUES_DISTRIBUTION_IMPUTED_PLOT)
 
     except FileNotFoundError:
         logger.warning("Raw or Imputed data not found. Skipping missing value plot.")

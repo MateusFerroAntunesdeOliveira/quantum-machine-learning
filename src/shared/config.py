@@ -21,6 +21,19 @@ RAW_DATA_FILE = INPUT_DIR / "Phenotypic_V1_0b_preprocessed1_from_shawon.csv"
 DROPPED_COLS_FILE = OUTPUT_DIR / "01_dropped_columns_report.csv"
 IMPUTED_DATA_FILE = OUTPUT_DIR / "01_imputed_data.csv"
 
+MISSING_VALUES_DISTRIBUTION_RAW_PLOT = OUTPUT_DIR / "02_missing_values_distribution_raw.png"
+MISSING_VALUES_DISTRIBUTION_IMPUTED_PLOT = OUTPUT_DIR / "02_missing_values_distribution_imputed.png"
+MISSINGNESS_STRATIFIED_PLOT = OUTPUT_DIR / "02_missingness_stratified.png"
+CLASS_BALANCE_PLOT = OUTPUT_DIR / "02_class_balance.png"
+HEATMAP_PLOT_SPEARMAN = OUTPUT_DIR / "02_heatmap_spearman.png"
+HEATMAP_PLOT_PEARSON = OUTPUT_DIR / "02_heatmap_pearson.png"
+HEATMAP_PPS_FULL_PLOT = OUTPUT_DIR / "02_heatmap_pps_full.png"
+HEATMAP_PPS_TARGET_PLOT = OUTPUT_DIR / "02_heatmap_pps_target_only.png"
+CORR_MATRIX_SPEARMAN_CSV = OUTPUT_DIR / "02_correlation_matrix_spearman.csv"
+CORR_MATRIX_PEARSON_CSV = OUTPUT_DIR / "02_correlation_matrix_pearson.csv"
+CORR_MATRIX_PPS_CSV = OUTPUT_DIR / "02_pps_matrix.csv"
+CORR_MATRIX_PPS_PIVOT_CSV = OUTPUT_DIR / "02_pps_matrix_target_only.csv"
+
 FINAL_TRAIN_DATA_FILE = OUTPUT_DIR / "03_X_train.csv"
 FINAL_TARGET_DATA_FILE = OUTPUT_DIR / "03_y_train.csv"
 SELECTED_FEATURES_FILE = OUTPUT_DIR / "03_selected_features.json"
@@ -75,6 +88,7 @@ VARIANCE_THRESHOLD = 0.01
 # Correlation Threshold (for removing multicollinearity)
 CORRELATION_THRESHOLD = 0.95
 
+# * Belongs to Step 1 - Initial columns to drop before any processing (identifiers, leakage, duplicates)
 COLS_TO_DROP_INITIALLY = [
     'Unnamed: 0.1',            # Duplicate index column
     'X',                       # Unknown
@@ -83,25 +97,7 @@ COLS_TO_DROP_INITIALLY = [
     'DSM_IV_TR'                # ! Data Leakage, because its a variable derived from the final diagnosis
 ]
 
-# * Used for polynomial feature generation (step 3) - Degree 2 + Interaction and based on PPS analysis
-POLYNOMIAL_ATTRIBUTES = [
-    # 1. ADOS_TOTAL             -> The main observational metric available for all patients.
-    # 2. ADI_R_SOCIAL_TOTAL_A   -> Strong history-based social metric.
-    # 3. SRS_RAW_TOTAL          -> Strong responsiveness scale metric.
-    # 4. AGE_AT_SCAN & FIQ      -> Modulators for interactions.
-
-    'ADOS_TOTAL',
-    'ADI_R_SOCIAL_TOTAL_A',
-    'SRS_RAW_TOTAL',
-    'AGE_AT_SCAN',
-    'FIQ',
-
-    # ! BlindSpot
-    # AGED_AT_SCAN and FIQ have a bad PPS correlation with the target alone.
-    # They can not predict autism well (makes sense to the biological context).
-    # However, a high ADOS score with 5 years is completely different than a high ADOS score at 25 years.
-]
-
+# * Belongs to Step 1 - Main attributes list to be used during cleaning and processing - can define a diagnostic set
 CORE_ATTRIBUTES = [
     TARGET_COLUMN,             # Diagnostic Group (1=Autism, 2=Control)
 
@@ -127,6 +123,7 @@ CORE_ATTRIBUTES = [
     'SRS_RAW_TOTAL',           # Total Score (67% missing)
 ]
 
+# * Belongs to Step 1 - Supporting attributes with moderate missingness or relevance - can define context
 SUPPORTING_ATTRIBUTES = [
     'AGE_AT_SCAN',             # Age at scan
     'SEX',                     # Gender (1=Male, 2=Female)
@@ -156,6 +153,7 @@ SUPPORTING_ATTRIBUTES = [
     'qc_rater_1','qc_anat_rater_2','qc_func_rater_2','qc_anat_rater_3','qc_func_rater_3'
 ]
 
+# * Belongs to Step 1 - Rare attributes with high missingness but potential niche value
 RARE_ATTRIBUTES = [
     # Secondary screening
     'SCQ_TOTAL',               # Social Communication Questionnaire (88% missing)
@@ -168,4 +166,65 @@ RARE_ATTRIBUTES = [
     'qc_notes_rater_1','qc_anat_notes_rater_2','qc_func_notes_rater_2',
     'qc_anat_notes_rater_3','qc_func_notes_rater_3',
     'MEDICATION_NAME','COMORBIDITY','OFF_STIMULANTS_AT_SCAN'
+]
+
+# * Belongs to Step 2 - Used for grouping features in EDA plots (step 2), ordering by missingness
+# Dictionary: { 'Substring to find': 'Readable Group Name' }
+# Order matters. More specific patterns should come first if needed.
+GROUP_PATTERNS = {
+    # Families groups
+    'WISC_IV': 'Bateria WISC-IV (QI)',                              # .1
+    'VINELAND': 'Escalas Vineland (Comportamento Adaptativo)',      # .10
+    'SRS_': 'Sub-escalas SRS (Responsividade Social)',              # .6
+    'ADI_R_': 'Sub-escores ADI-R',                                  # .14
+    'ADI_RRB': 'Comportamento Repetitivo ADI-R',                    # .15
+    'ADOS_': 'Sub-escores ADOS',                                    # .13
+    'SCQ_': 'Questionário de Comunicação Social (SCQ)',             # .7
+
+    # Quality Control (QC) Metrics
+    'qc_.*notes': 'Anotações de Controle de Qualidade (Texto)',     # .8
+    'qc_.*rater': 'Avaliadores de Qualidade (QC Rater)',
+    'anat_': 'Métricas Anatômicas (MRI)',
+    'func_': 'Métricas Funcionais (fMRI)',
+
+    # Individuals (Direct Translation)
+    'AQ_TOTAL': 'Quociente de Autismo Total (AQ)',                  # .2
+    'COMORBIDITY': 'Indicadores de Comorbidade',                    # .3
+    'AGE_AT_MPRAGE': 'Idade na Ressonância',                        # .4
+    'OFF_STIMULANTS_AT_SCAN': 'Sem Estimulantes no Scan',           # .5
+    'MEDICATION_NAME': 'Nome da Medicação',                         # .9
+    'BMI': 'Índice de Massa Corporal (IMC)',                        # .11
+    'HANDEDNESS_SCORES': 'Escores de Lateralidade',                 # .12
+    'HANDEDNESS_CATEGORY': 'Categoria de Lateralidade',             # .16
+    'CURRENT_MED_STATUS': 'Status de Medicação Atual',              # .17
+    'VIQ_TEST_TYPE': 'Tipo de Teste QI Verbal',                     # .18
+    'PIQ_TEST_TYPE': 'Tipo de Teste QI Performance',                # .19
+    'VIQ': 'QI Verbal',                                             # .20
+}
+
+# * Belongs to Step 2 - Critical features to check stratified missingness during EDA
+CRITICAL_FEATURES = [
+    'ADOS_TOTAL',
+    'ADI_R_SOCIAL_TOTAL_A',
+    'SRS_RAW_TOTAL',
+    'ADOS_MODULE'
+]
+
+# * Belongs to Step 3 - Used for polynomial feature generation - Degree 2 + Interaction and based on PPS analysis
+POLYNOMIAL_ATTRIBUTES = [
+    # 1. ADOS_TOTAL             -> The main observational metric available for all patients.
+    # 2. ADI_R_SOCIAL_TOTAL_A   -> Strong history-based social metric.
+    # 3. SRS_RAW_TOTAL          -> Strong responsiveness scale metric.
+    # 4. AGE_AT_SCAN & FIQ      -> Modulators for interactions.
+
+    'ADOS_TOTAL',
+    'ADI_R_SOCIAL_TOTAL_A',
+    'SRS_RAW_TOTAL',
+    'AGE_AT_SCAN',
+    'FIQ',
+
+    # ! BlindSpot
+    # AGED_AT_SCAN and FIQ have a bad PPS correlation with the target alone.
+    # They can not predict autism well (makes sense to the biological context).
+    # However, a high ADOS score with 5 years is completely different than a high ADOS score at 25 years.
 ]

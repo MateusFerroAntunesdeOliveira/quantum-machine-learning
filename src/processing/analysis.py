@@ -17,43 +17,6 @@ from src.shared import config, utils
 # Get logger instance for this module
 logger = logging.getLogger(__name__)
 
-# 2. Define Grouping Logic (Regex-like mapping)
-# Dictionary: { 'Substring to find': 'Readable Group Name' }
-# Order matters! More specific patterns should come first if needed.
-GROUP_PATTERNS = {
-    # Families groups
-    'WISC_IV': 'Bateria WISC-IV (QI)',
-    'WISC_': 'Outros Escores WISC (QI)',
-    'VINELAND': 'Escalas Vineland (Comportamento Adaptativo)',
-    'SRS_': 'Sub-escalas SRS (Responsividade Social)',
-    'ADI_R_': 'Sub-escores ADI-R',
-    'ADI_RRB': 'Comportamento Repetitivo ADI-R',
-    'ADOS_': 'Sub-escores ADOS',
-    'SCQ_': 'Questionário de Comunicação Social (SCQ)',
-
-    # Quality Control (QC) Metrics
-    'qc_.*notes': 'Anotações de Controle de Qualidade (Texto)',
-    'qc_.*rater': 'Avaliadores de Qualidade (QC Rater)',
-    'anat_': 'Métricas Anatômicas (MRI)',
-    'func_': 'Métricas Funcionais (fMRI)',
-
-    # Individuals (Direct Translation)
-    'AQ_TOTAL': 'Quociente de Autismo Total (AQ)',
-    'COMORBIDITY': 'Indicadores de Comorbidade',
-    'AGE_AT_MPRAGE': 'Idade na Ressonância',
-    'OFF_STIMULANTS_AT_SCAN': 'Sem Estimulantes no Scan',
-    'MEDICATION_NAME': 'Nome da Medicação',
-    'BMI': 'Índice de Massa Corporal (IMC)',
-    'HANDEDNESS_SCORES': 'Escores de Lateralidade',
-    'HANDEDNESS_CATEGORY': 'Categoria de Lateralidade',
-    'CURRENT_MED_STATUS': 'Status de Medicação Atual',
-    'VIQ_TEST_TYPE': 'Tipo de Teste QI Verbal',
-    'PIQ_TEST_TYPE': 'Tipo de Teste QI Performance',
-    'VIQ': 'QI Verbal',
-    'PIQ': 'QI de Performance',
-    'FIQ': 'QI Total'
-}
-
 def plot_missing_distribution(report_df: pd.DataFrame, fileName: str):
     """
     Generates a horizontal bar plot of missing values.
@@ -109,7 +72,7 @@ def plot_missing_distribution(report_df: pd.DataFrame, fileName: str):
     logger.info(f"Plot saved to: {output_path}\n")
 
 def assign_group(feature_name):
-    for pattern, group_name in GROUP_PATTERNS.items():
+    for pattern, group_name in config.GROUP_PATTERNS.items():
         if pattern in feature_name:
             return group_name
         # Handle Regex cases
@@ -168,13 +131,10 @@ def plot_class_balance(df: pd.DataFrame, target_col: str):
     plt.ylabel('Porcentagem do Dataset (%)')
     plt.xlabel('')
     plt.ylim(0, 100) # Fix scale usually helps context
-
     sns.despine()
     plt.tight_layout()
-
-    output_path = config.OUTPUT_DIR / "02_class_balance.png"
-    plt.savefig(output_path)
-    logger.info(f"Plot saved to: {output_path}\n")
+    plt.savefig(config.CLASS_BALANCE_PLOT)
+    logger.info(f"Plot saved to: {config.CLASS_BALANCE_PLOT}\n")
 
 def plot_stratified_missingness(df: pd.DataFrame, target_col: str, features_to_check: list):
     """
@@ -231,14 +191,10 @@ def plot_stratified_missingness(df: pd.DataFrame, target_col: str, features_to_c
     plt.grid(axis='y', alpha=0.3)
     # Rotate x labels if needed
     plt.xticks(rotation=45, ha='right')
-
     sns.despine()
     plt.tight_layout()
-
-    output_path = config.OUTPUT_DIR / "02_missingness_stratified.png"
-    plt.savefig(output_path)
-
-    logger.info(f"Plot saved to: {output_path}\n")
+    plt.savefig(config.MISSINGNESS_STRATIFIED_PLOT)
+    logger.info(f"Plot saved to: {config.MISSINGNESS_STRATIFIED_PLOT}\n")
 
 def compute_and_plot_correlations(df: pd.DataFrame):
     """
@@ -256,18 +212,21 @@ def compute_and_plot_correlations(df: pd.DataFrame):
         return
 
     methods = ['pearson', 'spearman']
-
     for method in methods:
         logger.info(f"-> Calculating {method.capitalize()} correlation...")
         corr_matrix = df_num.corr(method=method)
 
+        if method == 'spearman':
+            plot_file_name = config.HEATMAP_PLOT_SPEARMAN
+            csv_file_name = config.CORR_MATRIX_SPEARMAN_CSV
+        elif method == 'pearson':
+            plot_file_name = config.HEATMAP_PLOT_PEARSON
+            csv_file_name = config.CORR_MATRIX_PEARSON_CSV
+
         # Save CSV
-        csv_path = config.OUTPUT_DIR / f"02_correlation_matrix_{method}.csv"
-        corr_matrix.to_csv(csv_path)
+        corr_matrix.to_csv(csv_file_name)
 
-        # Save Heatmap
         plt.figure(figsize=(12, 10))
-
         # Create a mask for the upper triangle (cleaner look for papers)
         mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
         sns.heatmap(
@@ -282,15 +241,10 @@ def compute_and_plot_correlations(df: pd.DataFrame):
             linewidths=.5, 
             cbar_kws={"shrink": .5}
         )
-
         plt.title(f'{method.capitalize()} Correlation Matrix', pad=20)
         plt.tight_layout()
-
-        plot_path = config.OUTPUT_DIR / f"02_heatmap_{method}.png"
-        plt.savefig(plot_path)
-        plt.close()
-
-        logger.info(f"Saved {method} matrix and heatmap.\n")
+        plt.savefig(plot_file_name)
+        logger.info(f"Saved {method} matrix and heatmap to {plot_file_name}.\n")
 
 def compute_pps_matrix(df: pd.DataFrame):
     """
@@ -309,8 +263,8 @@ def compute_pps_matrix(df: pd.DataFrame):
         pps_pivot = matrix_df.pivot(columns='x', index='y', values='ppscore')
 
         # Save data
-        matrix_df.to_csv(config.OUTPUT_DIR / "02_pps_matrix_raw.csv", index=False)
-        pps_pivot.to_csv(config.OUTPUT_DIR / "02_pps_matrix_pivot.csv")
+        matrix_df.to_csv(config.CORR_MATRIX_PPS_CSV, index=False)
+        pps_pivot.to_csv(config.CORR_MATRIX_PPS_PIVOT_CSV)
 
         plt.figure(figsize=(14, 12))
         sns.heatmap(
@@ -322,12 +276,8 @@ def compute_pps_matrix(df: pd.DataFrame):
         )
         plt.title('Predictive Power Score (PPS) Matrix - Full', pad=20)
         plt.tight_layout()
-
-        plot_path = config.OUTPUT_DIR / "02_heatmap_pps_full.png"
-        plt.savefig(plot_path)
-        plt.close()
-        
-        logger.info(f"Saved Full PPS matrix and heatmap.\n")
+        plt.savefig(config.HEATMAP_PPS_FULL_PLOT)
+        logger.info(f"Saved Full PPS matrix and heatmap to {config.HEATMAP_PPS_FULL_PLOT}.\n")
 
         # * Visualization 2: Target Predictors (Features vs Target)
         target = config.TARGET_COLUMN
@@ -363,12 +313,9 @@ def compute_pps_matrix(df: pd.DataFrame):
             plt.ylabel('Feature')
             plt.xlabel('Target')
             plt.tight_layout()
-
-            plot_path_target = config.OUTPUT_DIR / "02_heatmap_pps_target_only.png"
-            plt.savefig(plot_path_target)
+            plt.savefig(config.HEATMAP_PPS_TARGET_PLOT)
             plt.close()
-
-            logger.info(f"Saved Target-Specific PPS heatmap.\n")
+            logger.info(f"Saved Target-Specific PPS heatmap to {config.HEATMAP_PPS_TARGET_PLOT}.\n")
         else:
             logger.warning(f"No predictors found for target {target} in PPS matrix.\n")
 
