@@ -108,3 +108,28 @@ Selecionamos o **LightGBM** e o **XGBoost** para a etapa de Otimização de Hipe
 
 3.  **Auditoria de Viés (`ADOS_RSRCH_RELIABLE`):**
     * Confirmou-se que a flag de confiabilidade atua como um proxy forte para o diagnóstico, indicando um viés procedimental na coleta do ABIDE (pacientes TEA são mais auditados que controles). Este achado será reportado como limitação do dataset.
+
+---
+
+## [2026-01-08] Validação da Estrutura de Dados (MNAR e Balanceamento)
+
+**Contexto:** Análise visual estratificada para justificar estratégias de imputação e modelagem.
+
+### 1. Balanceamento de Classes (Figura `02_class_balance.png`)
+* **Observação:** O dataset apresenta um equilíbrio natural quase perfeito:
+    * **Controle (CT):** 51.5% (N=573)
+    * **Autismo (TEA):** 48.5% (N=539)
+* **Decisão Metodológica:** Não é necessário utilizar técnicas de *oversampling* sintético (como SMOTE ou ADASYN) ou *undersampling*. O balanço natural favorece o uso da métrica **F1-Score** e **ROC-AUC** sem viés de classe majoritária excessivo.
+
+### 2. Mecanismo de Dados Ausentes (Figura `02_missingness_stratified.png`)
+A estratificação da ausência de dados por diagnóstico revelou dois padrões distintos de *Missingness*:
+
+* **Padrão Dependente do Diagnóstico (MNAR - Missing Not At Random):**
+    * **Instrumentos:** `ADOS_TOTAL`, `ADI_R_SOCIAL_TOTAL_A`, `ADOS_MODULE`.
+    * **Comportamento:** A ausência é massiva no grupo Controle (>90% para ADOS) e moderada/baixa no grupo Autismo (~25%).
+    * **Conclusão Crítica:** A ausência destes dados não é aleatória; ela reflete o protocolo clínico (controles assintomáticos não são testados). Portanto, a imputação (via MICE) de valores baixos para estes casos é estatisticamente robusta e semanticamente correta, pois reconstrói o fenótipo de "ausência de sintomas".
+
+* **Padrão Sistêmico/Site-Dependente:**
+    * **Instrumentos:** `SRS_RAW_TOTAL`.
+    * **Comportamento:** A ausência é alta (~60%) e **equilibrada** entre os dois grupos (Autistas e Controles).
+    * **Conclusão Crítica:** Diferente do ADOS, o SRS falta para ambos. Isso sugere que muitos centros de coleta (Sites) simplesmente não aplicam este questionário. Aqui, o MICE é vital para inferir a responsividade social baseada em outras variáveis latentes, já que a ausência não garante "normalidade".
