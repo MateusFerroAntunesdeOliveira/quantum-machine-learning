@@ -168,40 +168,6 @@ RARE_ATTRIBUTES = [
     'MEDICATION_NAME','COMORBIDITY','OFF_STIMULANTS_AT_SCAN'
 ]
 
-# * Belongs to Step 2 - Used for grouping features in EDA plots (step 2), ordering by missingness
-# Dictionary: { 'Substring to find': 'Readable Group Name' }
-# Order matters. More specific patterns should come first if needed.
-GROUP_PATTERNS = {
-    # Families groups
-    'WISC_IV': 'Bateria WISC-IV (QI)',                              # .1
-    'VINELAND': 'Escalas Vineland (Comportamento Adaptativo)',      # .10
-    'SRS_': 'Sub-escalas SRS (Responsividade Social)',              # .6
-    'ADI_R_': 'Sub-escores ADI-R',                                  # .14
-    'ADI_RRB': 'Comportamento Repetitivo ADI-R',                    # .15
-    'ADOS_': 'Sub-escores ADOS',                                    # .13
-    'SCQ_': 'Questionário de Comunicação Social (SCQ)',             # .7
-
-    # Quality Control (QC) Metrics
-    'qc_.*notes': 'Anotações de Controle de Qualidade (Texto)',     # .8
-    'qc_.*rater': 'Avaliadores de Qualidade (QC Rater)',
-    'anat_': 'Métricas Anatômicas (MRI)',
-    'func_': 'Métricas Funcionais (fMRI)',
-
-    # Individuals (Direct Translation)
-    'AQ_TOTAL': 'Quociente de Autismo Total (AQ)',                  # .2
-    'COMORBIDITY': 'Indicadores de Comorbidade',                    # .3
-    'AGE_AT_MPRAGE': 'Idade na Ressonância',                        # .4
-    'OFF_STIMULANTS_AT_SCAN': 'Sem Estimulantes no Scan',           # .5
-    'MEDICATION_NAME': 'Nome da Medicação',                         # .9
-    'BMI': 'Índice de Massa Corporal (IMC)',                        # .11
-    'HANDEDNESS_SCORES': 'Escores de Lateralidade',                 # .12
-    'HANDEDNESS_CATEGORY': 'Categoria de Lateralidade',             # .16
-    'CURRENT_MED_STATUS': 'Status de Medicação Atual',              # .17
-    'VIQ_TEST_TYPE': 'Tipo de Teste QI Verbal',                     # .18
-    'PIQ_TEST_TYPE': 'Tipo de Teste QI Performance',                # .19
-    'VIQ': 'QI Verbal',                                             # .20
-}
-
 # * Belongs to Step 2 - Critical features to check stratified missingness during EDA
 CRITICAL_FEATURES = [
     'ADOS_TOTAL',

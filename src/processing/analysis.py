@@ -56,8 +56,8 @@ def _assign_group(feature_name: str) -> str:
     """
     Maps a feature name to a readable group based on regex patterns in config.
     """
-    # Verify if GROUP_PATTERNS exists in config, else fallback or use empty dict
-    patterns = getattr(config, 'GROUP_PATTERNS', {})
+    # Verify if GROUP_PATTERNS exists in translate, else fallback or use empty dict
+    patterns = getattr(translate, 'GROUP_PATTERNS', {})
 
     for pattern, group_name in patterns.items():
         if pattern in feature_name:
@@ -183,7 +183,7 @@ def plot_stratified_missingness(df: pd.DataFrame, target_col: str, features_to_c
                 'Feature': feat,
                 'Class': translate.PLOT_LABELS['class_labels'].get(class_id, str(class_id)),
                 'Missing %': pct,
-                'Original_Class_Id': class_id 
+                'Original_Class_Id': class_id
             })
 
     if not plot_data:
