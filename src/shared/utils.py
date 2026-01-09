@@ -43,7 +43,7 @@ def load_final_data() -> tuple[pd.DataFrame, pd.Series]:
 
 def save_data(df: pd.DataFrame, path: str, index_value: str, label="data"):
     """Generic CSV saver."""
-    logger.info(f"Saving {label} to: {path}\n")
+    logger.info(f"Saved {label} to: {path}")
     df.to_csv(path, index=index_value)
 
 def file_exists(path: str) -> bool:
@@ -74,3 +74,35 @@ def apply_plot_style():
     sns.set_style("whitegrid")
     plt.rcParams.update(config.VIZ_PARAMS)
     logger.info("Applied standardized plot style from config.")
+
+def save_plot(filename: str):
+    """
+    Generic function to save the current matplotlib figure using config paths.
+    """
+    output_path = config.OUTPUT_DIR / filename
+    plt.tight_layout()
+    plt.savefig(output_path, bbox_inches='tight', dpi=config.VIZ_PARAMS['figure.dpi'])
+    plt.close()
+    logger.info(f"Plot saved to: {output_path}\n")
+
+def plot_generic_heatmap(data: pd.DataFrame, title: str, filename: str, cmap: str, mask=None, annot=False, cbar_label=None):
+    """
+    Generic function to plot standardized heatmaps (Corr or PPS).
+    """
+    plt.figure(figsize=(12, 10))
+    is_diverging = cmap == 'RdBu'
+
+    sns.heatmap(
+        data,
+        mask=mask,
+        annot=annot,
+        cmap=cmap,
+        vmax=1,
+        vmin=-1 if is_diverging else 0,         # If PPS (Blues), start at 0
+        center=0 if is_diverging else None,     # PPS does not need centering
+        square=True,
+        linewidths=.5,
+        cbar_kws={"shrink": .5, "label": cbar_label}
+    )
+    plt.title(title, pad=20)
+    save_plot(filename)

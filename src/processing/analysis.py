@@ -20,38 +20,6 @@ logger = logging.getLogger(__name__)
 
 # --- PRIVATE HELPER FUNCTIONS (DRY Principle) ---
 
-def _save_plot(filename: str):
-    """
-    Internal helper to save the current matplotlib figure using config paths.
-    """
-    output_path = config.OUTPUT_DIR / filename
-    plt.tight_layout()
-    plt.savefig(output_path, bbox_inches='tight', dpi=config.VIZ_PARAMS['figure.dpi'])
-    plt.close()
-    logger.info(f"Plot saved to: {output_path}\n")
-
-def _plot_generic_heatmap(data: pd.DataFrame, title: str, filename: str, cmap: str, mask=None, annot=False, cbar_label=None):
-    """
-    Generic function to plot standardized heatmaps (Corr or PPS).
-    """
-    plt.figure(figsize=(12, 10))
-    is_diverging = cmap == 'RdBu'
-
-    sns.heatmap(
-        data,
-        mask=mask,
-        annot=annot,
-        cmap=cmap,
-        vmax=1,
-        vmin=-1 if is_diverging else 0,         # If PPS (Blues), start at 0
-        center=0 if is_diverging else None,     # PPS does not need centering
-        square=True,
-        linewidths=.5,
-        cbar_kws={"shrink": .5, "label": cbar_label}
-    )
-    plt.title(title, pad=20)
-    _save_plot(filename)
-
 def _assign_group(feature_name: str) -> str:
     """
     Maps a feature name to a readable group based on regex patterns in config.
@@ -113,7 +81,7 @@ def plot_missing_distribution(report_df: pd.DataFrame, fileName: str):
     for i, v in enumerate(top_missing.values):
         barplot.text(v + 1, i + 0.25, f"{v:.1f}%", color='black', fontsize=10)
     sns.despine()
-    _save_plot(fileName)
+    utils.save_plot(fileName)
 
 def plot_class_balance(df: pd.DataFrame, target_col: str):
     """
@@ -159,7 +127,7 @@ def plot_class_balance(df: pd.DataFrame, target_col: str):
     plt.xlabel('')
     plt.ylim(0, 100)
     sns.despine()
-    _save_plot(config.CLASS_BALANCE_PLOT.name)
+    utils.save_plot(config.CLASS_BALANCE_PLOT.name)
 
 def plot_stratified_missingness(df: pd.DataFrame, target_col: str, features_to_check: list):
     """
@@ -209,7 +177,7 @@ def plot_stratified_missingness(df: pd.DataFrame, target_col: str, features_to_c
     plt.grid(axis='y', alpha=0.3)
     plt.xticks(rotation=45, ha='right')
     sns.despine()
-    _save_plot(config.MISSINGNESS_STRATIFIED_PLOT.name)
+    utils.save_plot(config.MISSINGNESS_STRATIFIED_PLOT.name)
 
 def compute_correlations(df: pd.DataFrame):
     """
@@ -237,7 +205,7 @@ def compute_correlations(df: pd.DataFrame):
         # Create mask for upper triangle
         mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
 
-        _plot_generic_heatmap(
+        utils.plot_generic_heatmap(
             data=corr_matrix,
             title=title,
             filename=plot_filename,
@@ -262,7 +230,7 @@ def compute_pps(df: pd.DataFrame):
         pps_pivot.to_csv(config.CORR_MATRIX_PPS_PIVOT_CSV)
 
         # * Visualization 1: Full PPS Matrix (Features vs Features)
-        _plot_generic_heatmap(
+        utils.plot_generic_heatmap(
             data=pps_pivot,
             title=translate.PLOT_LABELS['pps_full_title'],
             filename=config.HEATMAP_PPS_FULL_PLOT.name,
@@ -300,7 +268,7 @@ def compute_pps(df: pd.DataFrame):
             plt.title(translate.PLOT_LABELS['pps_target_title'].format(target), pad=20)
             plt.ylabel(translate.PLOT_LABELS['pps_ylabel'])
             plt.xlabel(translate.PLOT_LABELS['pps_xlabel'])
-            _save_plot(config.HEATMAP_PPS_TARGET_PLOT.name)
+            utils.save_plot(config.HEATMAP_PPS_TARGET_PLOT.name)
         else:
             logger.warning(f"No predictors found for {target}.\n")
 
