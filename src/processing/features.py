@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel, VarianceThreshold
 from sklearn.preprocessing import PolynomialFeatures
 
-from src.shared import config, utils
+from src.shared import config, translate, utils
 
 # Get logger instance for this module
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def prepare_target_variable(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     target = config.TARGET_COLUMN
     if target not in df.columns:
         raise ValueError(f"Target column {target} not found in dataframe.")
-    
+
     # Check current values
     unique_vals = df[target].unique()
     logger.info(f"Original Target values: {sorted(unique_vals)} (1=ASD, 2=Control)")
@@ -49,6 +49,7 @@ def prepare_target_variable(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
 
     y = df[target].astype(int)
     X = df.drop(columns=[target])
+    logger.info(f"Temporary dropped target column '{target}' from features.")
     return X, y
 
 def encode_categorical_features(X: pd.DataFrame) -> pd.DataFrame:
@@ -71,7 +72,7 @@ def encode_categorical_features(X: pd.DataFrame) -> pd.DataFrame:
         logger.info("No categorical columns found to encode.\n")
         return X
 
-    logger.info(f"Encoding {len(cat_cols)} columns: {cat_cols}")
+    logger.info(f"Encoding {len(cat_cols)} categorical columns: {cat_cols}")
 
     # * Apply One-Hot Encoding
     # drop_first=True avoids the dummy variable trap (multicollinearity)
@@ -106,7 +107,7 @@ def generate_polynomial_features(X: pd.DataFrame) -> pd.DataFrame:
     # 4. Create Feature Names
     # We use get_feature_names_out to get names like "AGE_AT_SCAN^2" or "AGE_AT_SCAN FIQ"
     new_feature_names = poly.get_feature_names_out(poly_candidates)
-    
+
     # 5. Convert to DataFrame
     df_poly = pd.DataFrame(X_poly_output, columns=new_feature_names, index=X.index)
 
@@ -144,7 +145,7 @@ def apply_feature_filtering(X: pd.DataFrame) -> pd.DataFrame:
 
     dropped_var_count = len(X.columns) - len(X_var.columns)
     if dropped_var_count > 0:
-        logger.info(f"Dropped {dropped_var_count} low-variance features.")
+        logger.info(f"Dropped {dropped_var_count} features due to low variance.")
 
     X = X_var
 
@@ -160,7 +161,7 @@ def apply_feature_filtering(X: pd.DataFrame) -> pd.DataFrame:
     to_drop = [column for column in upper.columns if any(upper[column] > config.CORRELATION_THRESHOLD)]
 
     if to_drop:
-        logger.info(f"Dropping {len(to_drop)} features due to multicollinearity: {to_drop}")
+        logger.info(f"Dropped {len(to_drop)} features due to multicollinearity: {to_drop}")
         X = X.drop(columns=to_drop)
     else:
         logger.info("No features dropped due to multicollinearity.")
@@ -169,8 +170,7 @@ def apply_feature_filtering(X: pd.DataFrame) -> pd.DataFrame:
 
 def apply_feature_selection(X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
     """
-    Applies feature selection methods to reduce the dataset to the most relevant features.
-    Methods can include Mutual Information and Wrapper methods (e.g., Random Forest Importance).
+    Applies Wrapper methods (Random Forest Importance) to reduce dimensionality.
     Note: PCA is avoided here to maintain feature interpretability.
     """
     logger.info("Applying Feature Selection...")
@@ -187,7 +187,7 @@ def apply_feature_selection(X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
     selected_feats = X.columns[selected_mask].tolist()
     X_selected = X.loc[:, selected_mask]
 
-    logger.info(f"Wrapper - Selected {len(selected_feats)} features out of {X.shape[1]}.")
+    logger.info(f"Wrapper (Random Forest) - Selected {len(selected_feats)} features out of {X.shape[1]}.")
     logger.info(f"Final Shape: {X_selected.shape}")
 
     # Save selected features list
@@ -203,3 +203,22 @@ def apply_feature_selection(X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
     utils.save_data(y.to_frame(), config.FINAL_TARGET_DATA_FILE, index_value=False, label="Final Target Data")
 
     return X_selected
+
+def plot_selected_features_correlation(X: pd.DataFrame):
+    """
+    Generates a correlation heatmap of the FINAL selected features.
+    This serves as visual proof that the features are not redundant.
+    """
+    logger.info("Generating Final Features Correlation Heatmap...")
+    utils.apply_plot_style()
+
+    X_plot = X.rename(columns=lambda x: x.replace("^", "_^_").replace(" ", "_x_"))
+    corr = X_plot.corr()
+    utils.plot_generic_heatmap(
+        data=corr,
+        title=translate.PLOT_LABELS['final_features_corr_title'],
+        filename=config.SELECTED_FEATURES_CORR_PLOT.name,
+        cmap='RdBu',
+        mask=np.triu(np.ones_like(corr, dtype=bool)),
+        annot=True,
+    )

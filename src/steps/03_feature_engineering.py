@@ -34,7 +34,7 @@ def main():
         logger.error("Failed in Encoding Categorical Features step.", exc_info=e)
         return
 
-    # * 2. Feature Generation.
+    # * 2. Feature Generation (Polynomial Features).
     # Maybe QI * Age.
     # We can not apply polynomial features to all of them. If we have 100 columns, we would have 1000+ features.
     # So, apply polynomial features (degree=2) only to CORE ATTRIBUTES (numeric) and some selected SUPPORTING ATTRIBUTES (numeric).
@@ -45,7 +45,7 @@ def main():
         logger.error("Failed in Polynomial Feature Generation step.", exc_info=e)
         return
 
-    # * 3. Feature Filtering.
+    # * 3. Feature Filtering (Variance Thresholding + Multicollinearity Removal).
     # Variance Thresholding to remove low-variance features.
     # Multicollinearity filter to remove highly correlated features. If Feature A and B have correlation > 0.95, drop one of them.
     try:
@@ -55,7 +55,7 @@ def main():
         logger.error("Failed in Feature Filtering step.", exc_info=e)
         return
 
-    # * 4. Feature Selection.
+    # * 4. Feature Selection (Wrapper / Random Forest)
     # Reduce dataset to TOP-K features:
     # Mutual Information to capture non-linear relationships (between features and target).
     # Wrapper (RF Importance) to remove ignored features by model.
@@ -65,6 +65,13 @@ def main():
         logger.info(f"Feature Selection Applied. New shape: {X_selected.shape}\n")
     except Exception as e:
         logger.error("Failed in Feature Selection step.", exc_info=e)
+        return
+
+    # * 5. Visual Validation
+    try:
+        features.plot_selected_features_correlation(X_selected)
+    except Exception as e:
+        logger.error("Failed in Visual Validation step.", exc_info=e)
         return
 
     logger.info("=== STEP 03: COMPLETED SUCCESSFULLY ===\n")
