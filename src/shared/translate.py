@@ -35,7 +35,7 @@ GROUP_PATTERNS = {
     'VIQ': 'QI Verbal',                                             # .20
 }
 
-# * Belongs to Step 2 - Plot labels translations for EDA plots
+# * Plot labels translations
 PLOT_LABELS = {
     'missing_title': 'Top 20 Grupos de Features com Dados Ausentes',
     'missing_xlabel': 'Porcentagem Média de Valores Ausentes (%)',
@@ -54,5 +54,7 @@ PLOT_LABELS = {
     'pps_target_title': 'Top Preditores para {}', # Format with target name
     'pps_xlabel': 'Target (Alvo)',
     'pps_ylabel': 'Feature (Variável)',
-    'pps_cbar': 'Predictive Power Score (PPS)'
+    'pps_cbar': 'Predictive Power Score (PPS)',
+
+    'final_features_corr_title': 'Correlação entre Features Selecionadas (Final)'
 }
