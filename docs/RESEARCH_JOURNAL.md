@@ -133,3 +133,22 @@ A estratificação da ausência de dados por diagnóstico revelou dois padrões 
     * **Instrumentos:** `SRS_RAW_TOTAL`.
     * **Comportamento:** A ausência é alta (~60%) e **equilibrada** entre os dois grupos (Autistas e Controles).
     * **Conclusão Crítica:** Diferente do ADOS, o SRS falta para ambos. Isso sugere que muitos centros de coleta (Sites) simplesmente não aplicam este questionário. Aqui, o MICE é vital para inferir a responsividade social baseada em outras variáveis latentes, já que a ausência não garante "normalidade".
+
+---
+
+## [2026-01-09] Análise de Correlação das Features Selecionadas (Final)
+
+**Contexto:** Validação visual da independência e consistência das 14 features finais pós-seleção.
+
+### Insights Fenomenológicos e Metodológicos:
+
+1.  **O "Cluster" de Confiabilidade:**
+    * Identificou-se forte correlação positiva entre `SRS_RAW_TOTAL_x_AGE_AT_SCAN` e as flags de confiabilidade (`ADOS_RSRCH_RELIABLE`, `ADI_R_RSRCH_RELIABLE`).
+    * **Significado:** Isso sugere que a aplicação rigorosa do protocolo (Reliable = 1) não é aleatória, mas está associada à idade do paciente e à disponibilidade do SRS. Pacientes avaliados com "padrão ouro" tendem a ter o pacote completo de instrumentos.
+
+2.  **Ortogonalidade dos Domínios:**
+    * `ADOS_MODULE` apresenta correlação baixa/negativa com a maioria das métricas de severidade. Isso valida sua importância como feature independente, capturando o nível de desenvolvimento/fluência verbal, e não apenas a gravidade do autismo.
+    * `ADI_RRB_TOTAL_C` (Comportamentos Repetitivos) mostra-se distinto das métricas sociais, confirmando que o modelo tem acesso a múltiplos eixos do espectro autista.
+
+3.  **Qualidade da Engenharia de Features:**
+    * A matriz confirma a ausência de colinearidade perfeita (r=1.0) entre features não-relacionadas, validando a eficácia do filtro de multicolinearidade. As correlações altas remanescentes são restritas às interações polinomiais intencionais, necessárias para capturar não-linearidades.
