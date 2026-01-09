@@ -40,6 +40,8 @@ SELECTED_FEATURES_FILE = OUTPUT_DIR / "03_selected_features.json"
 SELECTED_FEATURES_CORR_PLOT = OUTPUT_DIR / "03_selected_features_correlation.png"
 
 MODEL_COMPARISON_RESULTS_FILE = OUTPUT_DIR / "04_model_comparison_results.csv"
+# Without OUTPUT_DIR because it will be formatted with model name, e.g., "04_benchmarking_barplot_f1.png"
+MODEL_BENCHMARK_PLOT_TEMPLATE = "04_benchmarking_barplot_{}.png"
 
 # Will be concatenated with model name, e.g., "05_best_hyperparameters_LightGBM.json"
 BEST_PARAMS_FILE = OUTPUT_DIR / "05_best_hyperparameters"

@@ -58,6 +58,19 @@ PLOT_LABELS = {
 
     'final_features_corr_title': 'Correlação entre Features Selecionadas (Final)',
     
-    'benchmark_title': 'Comparação de Desempenho dos Modelos (F1-Score Médio)',
-    'benchmark_xlabel': 'Média do F1-Score (Validação Cruzada 10-Fold)',
+    # Benchmarking Titles (Dynamic keys based on metric)
+    'benchmark_title_f1': 'Comparação de Modelos (F1-Score Médio)',
+    'benchmark_xlabel_f1': 'Média do F1-Score (Validação Cruzada 10-Fold)',
+
+    'benchmark_title_roc_auc': 'Comparação de Modelos (ROC-AUC Médio)',
+    'benchmark_xlabel_roc_auc': 'Média da Área Sob a Curva (ROC-AUC)',
+
+    'benchmark_title_accuracy': 'Comparação de Modelos (Acurácia Média)',
+    'benchmark_xlabel_accuracy': 'Média da Acurácia (Accuracy)',
+
+    'benchmark_title_recall': 'Comparação de Modelos (Recall/Sensibilidade Média)',
+    'benchmark_xlabel_recall': 'Média do Recall (Sensibilidade)',
+
+    'benchmark_title_precision': 'Comparação de Modelos (Precisão Média)',
+    'benchmark_xlabel_precision': 'Média da Precisão (Precision)',
 }
