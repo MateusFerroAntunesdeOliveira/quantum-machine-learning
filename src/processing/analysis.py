@@ -13,7 +13,7 @@ import pandas as pd
 import ppscore as pps
 import seaborn as sns
 
-from src.shared import config, translate, utils
+from src.shared import config, styles, translate, utils
 
 # Get logger instance for this module
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ def plot_missing_distribution(report_df: pd.DataFrame, fileName: str):
     barplot = sns.barplot(
         x=top_missing.values,
         y=top_missing.index,
-        color='#4A90E2',
+        color=styles.STANDARD_BLUE_COLOR,
         edgecolor='none'
     )
     plt.title(translate.PLOT_LABELS['missing_title'], pad=20)
@@ -112,7 +112,7 @@ def plot_class_balance(df: pd.DataFrame, target_col: str):
         x='Label',
         y='Percentage',
         hue='Original',
-        palette=['#E74C3C', '#4A90E2'], # Red (ASD), Blue (Control)
+        palette=[styles.STANDARD_RED_COLOR, styles.STANDARD_BLUE_COLOR], # Red (ASD), Blue (Control)
         edgecolor='black',
         legend=False
     )
@@ -165,7 +165,7 @@ def plot_stratified_missingness(df: pd.DataFrame, target_col: str, features_to_c
         x='Feature',
         y='Missing %',
         hue='Class',
-        palette=['#4A90E2', '#E74C3C'], # Blue (Control), Red (ASD) - Check mapping order!
+        palette=[styles.STANDARD_BLUE_COLOR, styles.STANDARD_RED_COLOR],
         edgecolor='black'
     )
 

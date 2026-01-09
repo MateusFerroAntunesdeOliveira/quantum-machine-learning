@@ -57,24 +57,6 @@ MISSING_THRESHOLDS = {
     'default': 0.5             # 50% for any other columns. Accept up to 49% missing.
 }
 
-# --- VISUALIZATION STANDARDS ---
-VIZ_PARAMS = {
-    'figure.figsize': (10, 6),
-    'figure.dpi': 300,                 # High resolution for print
-    'font.family': 'serif',            # Academic standard (Times/Palatino)
-    'font.serif': ['Times New Roman', 'DejaVu Serif'],
-    'font.size': 12,
-    'axes.labelsize': 14,
-    'axes.titlesize': 16,
-    'xtick.labelsize': 12,
-    'ytick.labelsize': 12,
-    'legend.fontsize': 12,
-    'lines.linewidth': 2.5,
-    'grid.alpha': 0.5,
-    'savefig.bbox': 'tight',
-    'savefig.pad_inches': 0.1
-}
-
 # --- COLUMNS DEFINITIONS ---
 # * Target Mapping (ABIDE: 1=Autism, 2=Control -> ML: 1=Pos, 0=Neg)
 TARGET_COLUMN = 'DX_GROUP'     # Diagnostic Group (1=Autism, 2=Control)
