@@ -13,31 +13,10 @@ import pandas as pd
 import ppscore as pps
 import seaborn as sns
 
-from src.shared import config, utils
+from src.shared import config, translate, utils
 
 # Get logger instance for this module
 logger = logging.getLogger(__name__)
-
-PLOT_LABELS = {
-    'missing_title': 'Top 20 Grupos de Features com Dados Ausentes',
-    'missing_xlabel': 'Porcentagem Média de Valores Ausentes (%)',
-
-    'class_balance_title': 'Distribuição das Classes (Diagnóstico)',
-    'class_balance_ylabel': 'Porcentagem do Dataset (%)',
-    'class_labels': {1: 'Autismo (TEA)', 0: 'Controle (CT)', 2: 'Controle (CT)'}, # Handle 1/0 or 1/2
-
-    'stratified_title': 'Dados Ausentes Estratificados por Diagnóstico',
-    'stratified_ylabel': 'Porcentagem de Ausência (%)',
-
-    'corr_pearson_title': 'Matriz de Correlação de Pearson',
-    'corr_spearman_title': 'Matriz de Correlação de Spearman',
-
-    'pps_full_title': 'Matriz de Poder Preditivo (PPS) - Completa',
-    'pps_target_title': 'Top Preditores para {}', # Format with target name
-    'pps_xlabel': 'Target (Alvo)',
-    'pps_ylabel': 'Feature (Variável)',
-    'pps_cbar': 'Predictive Power Score (PPS)'
-}
 
 # --- PRIVATE HELPER FUNCTIONS (DRY Principle) ---
 
@@ -125,8 +104,8 @@ def plot_missing_distribution(report_df: pd.DataFrame, fileName: str):
         color='#4A90E2',
         edgecolor='none'
     )
-    plt.title(PLOT_LABELS['missing_title'], pad=20)
-    plt.xlabel(PLOT_LABELS['missing_xlabel'])
+    plt.title(translate.PLOT_LABELS['missing_title'], pad=20)
+    plt.xlabel(translate.PLOT_LABELS['missing_xlabel'])
     plt.ylabel('')
     plt.xlim(0, 110) # Space for labels
     plt.grid(axis='x', alpha=0.3)
@@ -153,7 +132,7 @@ def plot_class_balance(df: pd.DataFrame, target_col: str):
     # Map labels if possible (assuming 1=Autism, 2=Control based on Config)
     # We create a display mapping for the plot
     plot_data = pd.DataFrame({
-        'Label': [PLOT_LABELS['class_labels'].get(x, str(x)) for x in counts.index],
+        'Label': [translate.PLOT_LABELS['class_labels'].get(x, str(x)) for x in counts.index],
         'Percentage': counts.values,
         'Count': counts_raw.values,
         'Original': counts.index
@@ -175,8 +154,8 @@ def plot_class_balance(df: pd.DataFrame, target_col: str):
         text = f"{row['Percentage']:.1f}%\n(N={row['Count']})"
         bars.text(i, row['Percentage'] + 1, text, ha='center', color='black', fontsize=12)
 
-    plt.title(PLOT_LABELS['class_balance_title'], pad=20)
-    plt.ylabel(PLOT_LABELS['class_balance_ylabel'])
+    plt.title(translate.PLOT_LABELS['class_balance_title'], pad=20)
+    plt.ylabel(translate.PLOT_LABELS['class_balance_ylabel'])
     plt.xlabel('')
     plt.ylim(0, 100)
     sns.despine()
@@ -202,7 +181,7 @@ def plot_stratified_missingness(df: pd.DataFrame, target_col: str, features_to_c
         for class_id, pct in missing_by_class.items():
             plot_data.append({
                 'Feature': feat,
-                'Class': PLOT_LABELS['class_labels'].get(class_id, str(class_id)),
+                'Class': translate.PLOT_LABELS['class_labels'].get(class_id, str(class_id)),
                 'Missing %': pct,
                 'Original_Class_Id': class_id 
             })
@@ -222,8 +201,8 @@ def plot_stratified_missingness(df: pd.DataFrame, target_col: str, features_to_c
         edgecolor='black'
     )
 
-    plt.title(PLOT_LABELS['stratified_title'], pad=20)
-    plt.ylabel(PLOT_LABELS['stratified_ylabel'])
+    plt.title(translate.PLOT_LABELS['stratified_title'], pad=20)
+    plt.ylabel(translate.PLOT_LABELS['stratified_ylabel'])
     plt.xlabel('')
     plt.ylim(0, 105)
     plt.legend(title='Grupo')
@@ -245,8 +224,8 @@ def compute_correlations(df: pd.DataFrame):
         return
 
     methods = {
-        'pearson': (config.CORR_MATRIX_PEARSON_CSV, config.HEATMAP_PLOT_PEARSON.name, PLOT_LABELS['corr_pearson_title']),
-        'spearman': (config.CORR_MATRIX_SPEARMAN_CSV, config.HEATMAP_PLOT_SPEARMAN.name, PLOT_LABELS['corr_spearman_title'])
+        'pearson': (config.CORR_MATRIX_PEARSON_CSV, config.HEATMAP_PLOT_PEARSON.name, translate.PLOT_LABELS['corr_pearson_title']),
+        'spearman': (config.CORR_MATRIX_SPEARMAN_CSV, config.HEATMAP_PLOT_SPEARMAN.name, translate.PLOT_LABELS['corr_spearman_title'])
     }
 
     for method, (csv_path, plot_filename, title) in methods.items():
@@ -285,10 +264,10 @@ def compute_pps(df: pd.DataFrame):
         # * Visualization 1: Full PPS Matrix (Features vs Features)
         _plot_generic_heatmap(
             data=pps_pivot,
-            title=PLOT_LABELS['pps_full_title'],
+            title=translate.PLOT_LABELS['pps_full_title'],
             filename=config.HEATMAP_PPS_FULL_PLOT.name,
             cmap='Blues', 
-            cbar_label=PLOT_LABELS['pps_cbar']
+            cbar_label=translate.PLOT_LABELS['pps_cbar']
         )
 
         # * Visualization 2: Target Predictors (Features vs Target)
@@ -310,7 +289,7 @@ def compute_pps(df: pd.DataFrame):
                 annot=True,
                 fmt='.2f',
                 cmap='Blues',
-                cbar_kws={'label': PLOT_LABELS['pps_cbar']},
+                cbar_kws={'label': translate.PLOT_LABELS['pps_cbar']},
                 linewidths=0.5,
                 annot_kws={'size': 10},
                 vmin=0,
@@ -318,9 +297,9 @@ def compute_pps(df: pd.DataFrame):
             )
 
             # Formata título com o nome da feature alvo
-            plt.title(PLOT_LABELS['pps_target_title'].format(target), pad=20)
-            plt.ylabel(PLOT_LABELS['pps_ylabel'])
-            plt.xlabel(PLOT_LABELS['pps_xlabel'])
+            plt.title(translate.PLOT_LABELS['pps_target_title'].format(target), pad=20)
+            plt.ylabel(translate.PLOT_LABELS['pps_ylabel'])
+            plt.xlabel(translate.PLOT_LABELS['pps_xlabel'])
             _save_plot(config.HEATMAP_PPS_TARGET_PLOT.name)
         else:
             logger.warning(f"No predictors found for {target}.\n")
