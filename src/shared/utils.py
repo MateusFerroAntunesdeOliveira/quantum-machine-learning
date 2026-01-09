@@ -8,6 +8,7 @@ import seaborn as sns
 
 from . import config
 from . import logger
+from . import styles
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ def apply_plot_style():
     Should be called before generating any figure.
     """
     sns.set_style("whitegrid")
-    plt.rcParams.update(config.VIZ_PARAMS)
+    plt.rcParams.update(styles.VIZ_PARAMS)
     logger.info("Applied standardized plot style from config.")
 
 def save_plot(filename: str):
@@ -81,7 +82,7 @@ def save_plot(filename: str):
     """
     output_path = config.OUTPUT_DIR / filename
     plt.tight_layout()
-    plt.savefig(output_path, bbox_inches='tight', dpi=config.VIZ_PARAMS['figure.dpi'])
+    plt.savefig(output_path, bbox_inches='tight', dpi=styles.VIZ_PARAMS['figure.dpi'])
     plt.close()
     logger.info(f"Plot saved to: {output_path}\n")
 
@@ -105,4 +106,44 @@ def plot_generic_heatmap(data: pd.DataFrame, title: str, filename: str, cmap: st
         cbar_kws={"shrink": .5, "label": cbar_label}
     )
     plt.title(title, pad=20)
+    save_plot(filename)
+
+def plot_generic_barplot(data: pd.DataFrame, x: str, y: str, title: str, xlabel: str, ylabel: str, filename: str,hue: str = None, palette: dict = None, xerr: str = None, text_labels_col: str = None,xlim: tuple = None):
+    """
+    Standardized generic horizontal barplot with academic styling.
+    Supports hue, custom palette, error bars, and text labels.
+    """
+    apply_plot_style()
+    plt.close('all')
+    plt.figure(figsize=(12, 6))
+
+    barplot = sns.barplot( data=data, x=x, y=y, hue=hue, palette=palette, edgecolor='black', legend=False)
+
+    # Error Bars (Optional)
+    if xerr:
+        plt.errorbar( x=data[x], y=range(len(data)), xerr=data[xerr], fmt='none', ecolor='black', capsize=5, elinewidth=1.5)
+
+    # Text Labels (Optional)
+    if text_labels_col:
+        for i, row in enumerate(data.itertuples()):
+            val = getattr(row, x)
+            err = getattr(row, xerr) if xerr else 0
+            # A little offset to the right
+            std_val = err if not pd.isna(err) else 0
+            x_pos = val + std_val + (xlim[1]*0.005 if xlim else 0.002)
+
+            # Format logic could be passed, but default to 4 decimals or string
+            label_text = f"{getattr(row, text_labels_col):.4f}" if isinstance(getattr(row, text_labels_col), float) else str(getattr(row, text_labels_col))
+            plt.text(x_pos, i, label_text, color='black', va='center', fontsize=11, fontweight='bold')
+
+    plt.title(title, pad=20, fontsize=14)
+    plt.xlabel(xlabel, fontsize=12)
+    plt.ylabel(ylabel)
+
+    if xlim:
+        plt.xlim(xlim)
+
+    plt.grid(axis='x', alpha=0.3, linestyle='--')
+    sns.despine()
+
     save_plot(filename)

@@ -56,5 +56,8 @@ PLOT_LABELS = {
     'pps_ylabel': 'Feature (Variável)',
     'pps_cbar': 'Predictive Power Score (PPS)',
 
-    'final_features_corr_title': 'Correlação entre Features Selecionadas (Final)'
+    'final_features_corr_title': 'Correlação entre Features Selecionadas (Final)',
+    
+    'benchmark_title': 'Comparação de Desempenho dos Modelos (F1-Score Médio)',
+    'benchmark_xlabel': 'Média do F1-Score (Validação Cruzada 10-Fold)',
 }

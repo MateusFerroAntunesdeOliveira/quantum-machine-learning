@@ -109,6 +109,8 @@ def main():
         for index, row in summary_df.iterrows():
             logger.info(f"{row['Model']:<20} | F1: {row['Mean_f1']:.4f} | AUC: {row['Mean_roc_auc']:.4f}")
 
+    modeling.plot_benchmark_results(results_df)
+
     logger.info("=== STEP 04: COMPLETED SUCCESSFULLY ===\n")
 
 if __name__ == "__main__":
