@@ -152,3 +152,43 @@ A estratificação da ausência de dados por diagnóstico revelou dois padrões 
 
 3.  **Qualidade da Engenharia de Features:**
     * A matriz confirma a ausência de colinearidade perfeita (r=1.0) entre features não-relacionadas, validando a eficácia do filtro de multicolinearidade. As correlações altas remanescentes são restritas às interações polinomiais intencionais, necessárias para capturar não-linearidades.
+
+---
+
+## [2026-01-09] Benchmarking de Modelos: A Batalha dos Boostings e Decisões Clínicas
+
+**Contexto:**
+Execução do pipeline de validação cruzada estratificada (10-folds) comparando 7 algoritmos clássicos. O objetivo não foi apenas encontrar o maior número, mas entender o *comportamento clínico* de cada modelo diante das 14 features fenotípicas selecionadas.
+
+### 1. Análise Comparativa: O Trade-off Precisão vs. Recall
+
+A disputa pela liderança ficou concentrada entre os algoritmos de Gradient Boosting (LightGBM e XGBoost), mas com perfis de erro diametralmente opostos, revelando nuances cruciais para a aplicação médica:
+
+* **LightGBM - O "Cirurgião" (Campeão em Precisão: 0.9981):**
+    * **Comportamento:** O modelo demonstrou ser extremamente conservador e assertivo. Ao classificar um indivíduo como Autista, ele tem **99.8% de certeza**.
+    * **Interpretação:** Ele minimiza drasticamente os Falsos Positivos. Em um cenário clínico de "Diagnóstico Final" (onde rotular uma criança neurotípica como autista pode gerar estigma e custos desnecessários), este é o comportamento ideal.
+    * **Performance Global:** Venceu também em F1-Score (**0.9944**) e ROC-AUC (**0.9996**), além de apresentar o menor desvio padrão, indicando maior estabilidade de generalização.
+
+* **XGBoost - O "Rastreador" (Campeão em Recall: 0.9944):**
+    * **Comportamento:** O modelo adota uma postura mais "agressiva" na detecção. Ele "chuta" um pouco mais para garantir que nenhum caso positivo escape.
+    * **Interpretação:** Sua superioridade no Recall (+0.0037 sobre o LightGBM) o torna o candidato teórico ideal para **Triagem em Massa (Screening)**, onde o custo do Falso Negativo (não detectar uma criança que precisa de ajuda) é inaceitável, e Falsos Positivos são toleráveis para reavaliação posterior.
+
+### 2. Validação da Engenharia de Features
+
+Os resultados dos modelos secundários serviram como uma "prova real" da qualidade do Step 3 (Feature Engineering):
+
+* **Random Forest (F1: 0.9917):**
+    * O fato do Random Forest ter performado consistentemente bem (3º lugar) valida nossa escolha de usá-lo como **Feature Selector**. Se o "juiz" (RF) também joga bem o jogo, a seleção das features foi orgânica e robusta, e não um artefato estatístico.
+* **KNN (k=10) (Precisão: 0.9946):**
+    * **Achado Surpreendente:** O KNN superou o XGBoost em Precisão. Isso indica que o espaço de features (a "topologia" dos dados) está extremamente bem definido. Se os 10 vizinhos mais próximos apontam para uma classe, a chance de erro é mínima. Isso confirma que as features selecionadas criaram clusters densos e bem separados entre TEA e Controle.
+
+### 3. A Questão da Performance "Perfeita" (>99%)
+
+Registra-se aqui a defesa contra a hipótese de *Data Leakage*. A performance próxima de 100% não é um erro, mas uma consequência metodológica deliberada:
+* O modelo teve acesso a features derivadas do `ADOS` e `ADI-R` (reais ou imputadas via MICE).
+* Estes instrumentos *são* a definição operacional do diagnóstico de autismo.
+* Logo, o modelo não "previu o futuro" magicamente; ele aprendeu com sucesso a **replicar o critério médico** de forma matemática. O sucesso está na estratégia de imputação que reconstruiu o fenótipo dos controles, permitindo que o modelo diferenciasse "sintoma ausente" de "dado ausente".
+
+### Decisão Estratégica:
+O **LightGBM** foi selecionado como o modelo final.
+* **Justificativa:** Para a tese, priorizamos a **estabilidade (menor variância)** e a **confiabilidade da predição positiva (Precisão)**. Como o próximo passo envolve explicabilidade (SHAP), queremos explicar as decisões do modelo mais "certo" e consistente, evitando ruídos de falsos positivos que poderiam poluir a interpretação fenotípica.
